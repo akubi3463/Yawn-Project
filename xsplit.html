@@ -25,7 +25,8 @@
     }
     .mono { font-family: 'JetBrains Mono', monospace; }
     #app { display: flex; flex-direction: column; min-height: 100dvh; }
-    @media (min-width: 900px) { #app { flex-direction: row; height: 100dvh; overflow: hidden; } }
+    /* ★修正: iPadでoverflowが効くよう 100svh + overflow修正 */
+    @media (min-width: 900px) { #app { flex-direction: row; height: 100svh; overflow: hidden; } }
 
     /* ━━━━ SIDEBAR ━━━━ */
     .sidebar {
@@ -58,7 +59,8 @@
 
     /* ━━━━ MAIN ━━━━ */
     .main { display: flex; flex-direction: column; }
-    @media (min-width: 900px) { .main { flex: 1; overflow: hidden; } }
+    /* ★修正: overflow: hidden → overflow-y: auto でiPadでスクロール可能に */
+    @media (min-width: 900px) { .main { flex: 1; overflow-y: auto; min-height: 0; } }
 
     /* ━━━━ PREVIEW AREA ━━━━ */
     .preview-area {
@@ -184,9 +186,12 @@
 
     /* ━━━━ EDITOR PANEL ━━━━ */
     .editor-panel { background:var(--surface); border-top:1px solid var(--border); display:flex; flex-direction:column; overflow-y:auto; -webkit-overflow-scrolling:touch; flex-shrink:0; }
-    @media (min-width: 900px) { .editor-panel { height: 200px; flex-direction: row; overflow: hidden; } }
+    @media (min-width: 900px) { .editor-panel { height: 200px; flex-direction: row; overflow: hidden; flex-shrink: 0; } }
+
+    /* ★変更: editor-emptyはsplit modeでは非表示（タブは常に表示するため不要） */
     .editor-empty { padding:24px 16px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:8px; color:var(--muted); }
     .editor-empty p { font-size:11px; letter-spacing:2px; font-weight:700; text-transform:uppercase; text-align:center; }
+
     .editor-content { display:flex; flex-direction:column; width:100%; }
     @media (min-width: 900px) { .editor-content { flex-direction:row; flex:1; } }
     .slot-tabs { display:flex; border-bottom:1px solid var(--border); flex-shrink:0; }
@@ -437,13 +442,9 @@
     <!-- ━━━━ EDITOR PANEL ━━━━ -->
     <div class="editor-panel">
 
-      <!-- split mode editor -->
+      <!-- ★ split mode: selectedGrid が null でもタブ＋Exportを常時表示 -->
       <template v-if="mode==='split'">
-        <div v-if="selectedGrid===null" class="editor-empty">
-          <svg width="36" height="36" viewBox="0 0 24 24" fill="currentColor" style="opacity:.2"><path d="M3 5h18v2H3V5zm0 7h18v2H3v-2zm0 7h18v2H3v-2z"/></svg>
-          <p>グリッドのセルをタップして<br>上下の隠し画像を設定</p>
-        </div>
-        <div v-else class="editor-content">
+        <div class="editor-content">
           <div class="slot-tabs">
             <button v-for="n in 4" :key="n" class="slot-tab"
               :class="{active:selectedGrid===n-1,'has-main':grids[n-1].main,'has-extra':grids[n-1].top||grids[n-1].bottom}"
@@ -746,7 +747,6 @@ createApp({
     }
 
     // vscroll cell style (in 2×2 grid preview) — 16:9 cell
-    // vscroll: モーダルフレーム座標 → セル座標に変換（二重スケールなし）
     function calcVImgStyle(s, fw, fh) {
       const mfw = s.fw||VFRAME_W; const mfh = s.fh||VFRAME_H
       const fitScale = Math.max(mfw/s.imgW, mfh/s.imgH)
@@ -772,13 +772,11 @@ createApp({
       const fw = Math.min(260, window.innerWidth-48); const fh = fw*9/16
       return calcVImgStyle(s, fw, fh)
     }
-    // スロットバーのサムネイル用（小さいサイズ）
     function getVThumbStyle(idx) {
       const s = vSlots.value[idx]
       if (!s.src || !s.imgW || !s.imgH) return { width:'100%', height:'100%', objectFit:'cover' }
-      // サムネイルサイズ: スロットバー幅の1/4 × 16:9
       const barW = Math.min(320, window.innerWidth-48)
-      const fw = (barW - 18) / 4   // 4スロット分 gap考慮
+      const fw = (barW - 18) / 4
       const fh = fw * 9/16
       return calcVImgStyle(s, fw, fh)
     }
@@ -848,7 +846,6 @@ createApp({
     }
     function commitDrop(target, src) {
       if (target.startsWith('cell-')) {
-        // split mode grid cell
         if (mode.value==='split') { applyAutoSplit(src) }
         else {
           const idx=parseInt(target.split('-')[1]); const g=grids.value[idx]
@@ -857,7 +854,6 @@ createApp({
         }
         showToast('✓ 配置しました','success')
       } else if (target.startsWith('vcell-')) {
-        // vscroll mode cell
         const idx=parseInt(target.split('-')[1]); const s=vSlots.value[idx]
         s.src=src; s.offsetX=0; s.offsetY=0; s.scale=1; s.fw=0; s.fh=0; s.confirmed=false
         cacheVImgSize(src,s); nextTick(()=>openVAdjust(idx))
@@ -884,33 +880,6 @@ createApp({
       return new Promise((res,rej)=>{ const i=new Image(); i.onload=()=>res(i); i.onerror=rej; i.src=src })
     }
 
-    // ── 1枚を分割モード: 675×1200px（縦長）書き出し ──
-    // プレビュー座標系はそのまま流用し、出力キャンバスにスケーリングして描画
-    async function drawZone(ctx, src, yOff, S, transform, frameW, frameH, gap, splitInfo) {
-      if (!src) { ctx.fillStyle='#111'; ctx.fillRect(0,yOff,S,S); return }
-      const img=await loadImg(src)
-      ctx.save(); ctx.beginPath(); ctx.rect(0,yOff,S,S); ctx.clip()
-      const t=transform
-      const fitScale=Math.max(frameW/img.naturalWidth, frameH/img.naturalHeight)
-      const totalScale=fitScale*t.scale
-      const fullW=img.naturalWidth*totalScale; const fullH=img.naturalHeight*totalScale
-      const fullLeft=(frameW-fullW)/2+t.offsetX; const fullTop=(frameH-fullH)/2+t.offsetY
-      if (splitInfo) {
-        const hGap=gap/2; const qW=frameW/2; const qH=frameH/2
-        let qLeft=splitInfo.xIdx*qW; let qTop=splitInfo.yIdx*qH
-        if (splitInfo.xIdx!==0) qLeft+=hGap
-        if (splitInfo.yIdx!==0) qTop+=hGap
-        const qActualW=qW-hGap; const qActualH=qH-hGap
-        const scX=S/qActualW; const scY=S/qActualH
-        ctx.drawImage(img,0,0,img.naturalWidth,img.naturalHeight, (fullLeft-qLeft)*scX, yOff+(fullTop-qTop)*scY, fullW*scX, fullH*scY)
-      } else {
-        const scX=S/frameW; const scY=S/frameH
-        ctx.drawImage(img,0,0,img.naturalWidth,img.naturalHeight, fullLeft*scX, yOff+fullTop*scY, fullW*scX, fullH*scY)
-      }
-      ctx.restore()
-    }
-
-    // drawZoneRect: 任意サイズの矩形領域に描画（幅・高さ個別指定版）
     async function drawZoneRect(ctx, src, x, y, W, H, transform, frameW, frameH) {
       if (!src) { ctx.fillStyle='#111'; ctx.fillRect(x,y,W,H); return }
       const img=await loadImg(src)
@@ -926,22 +895,16 @@ createApp({
       ctx.restore()
     }
 
-    // 1枚を分割モード: 675×1200px
-    // 上隠し(262.5px) + FV中央(675px) + 下隠し(262.5px) = 1200px
-    // FV部分: splitInfoあり→4分割の1/4クロップ、なし→全体fit
     async function buildSplitCanvas(slotIdx, canvas) {
       const W=675, H=1200, gap=gapSize.value
       const ctx=canvas.getContext('2d',{willReadFrequently:true})
       canvas.width=W; canvas.height=H; ctx.fillStyle='#111'; ctx.fillRect(0,0,W,H)
       const g=grids.value[slotIdx]
+      const FV_H=675, HID_H=262.5
 
-      const FV_H=675, HID_H=262.5  // 各ゾーン高さ
-
-      // ── 上の隠しゾーン (y:0, h:262.5) ──
       const topFW=g.topT.fw||FRAME_ZONE_W; const topFH=g.topT.fh||FRAME_ZONE_H
       await drawZoneRect(ctx, g.top, 0, 0, W, HID_H, g.topT, topFW, topFH)
 
-      // ── ファーストビュー (y:262.5, h:675) ──
       const mainFW=g.mainT.fw||FRAME_SPLIT_W; const mainFH=g.mainT.fh||FRAME_SPLIT_H
       if (g.main) {
         const img=await loadImg(g.main)
@@ -951,7 +914,6 @@ createApp({
         const fullW=img.naturalWidth*totalScale; const fullH=img.naturalHeight*totalScale
         const fullLeft=(mainFW-fullW)/2+t.offsetX; const fullTop=(mainFH-fullH)/2+t.offsetY
         if (g.splitInfo) {
-          // 4分割: モーダルフレームの1/4象限をFV(W×FV_H)に描画
           const hGap=gap/2
           const qW=mainFW/2; const qH=mainFH/2
           let qLeft=g.splitInfo.xIdx*qW; let qTop=g.splitInfo.yIdx*qH
@@ -970,12 +932,10 @@ createApp({
         ctx.fillStyle='#1a1a24'; ctx.fillRect(0,HID_H,W,FV_H)
       }
 
-      // ── 下の隠しゾーン (y:937.5, h:262.5) ──
       const botFW=g.bottomT.fw||FRAME_ZONE_W; const botFH=g.bottomT.fh||FRAME_ZONE_H
       await drawZoneRect(ctx, g.bottom, 0, HID_H+FV_H, W, HID_H, g.bottomT, botFW, botFH)
     }
 
-    // 縦スクロールモード: 600×800px (3:4)
     async function buildVCanvas(idx, canvas) {
       const W=600, H=800
       const ctx=canvas.getContext('2d',{willReadFrequently:true})
@@ -1039,7 +999,6 @@ createApp({
             showToast(`✓ ${done}枚を書き出しました`,'success')
           }
         } else {
-          // vscroll mode
           const indices=vSlots.value.map((s,i)=>({s,i})).filter(({s})=>s.src)
           if (!indices.length) { showToast('画像をスロットに配置してください','error'); return }
           if (isMobile.value) {
