@@ -1,0 +1,1335 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>X Split Pro — はじめてのガイド</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --bg: #0a0a0f;
+  --surface: #111118;
+  --surface2: #1a1a24;
+  --surface3: #22222e;
+  --border: #2a2a3a;
+  --accent: #5b8fff;
+  --accent2: #a78bfa;
+  --text: #e8e8f0;
+  --muted: #5a5a7a;
+  --muted2: #8888aa;
+  --success: #34d399;
+  --danger: #f87171;
+  --warn: #fbbf24;
+}
+
+html { scroll-behavior: smooth; }
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Syne', sans-serif;
+  line-height: 1.7;
+  font-size: 15px;
+  overflow-x: hidden;
+}
+
+/* ── HERO ── */
+.hero {
+  min-height: 320px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 72px 24px 56px;
+  position: relative;
+  overflow: hidden;
+}
+.hero-bg {
+  position: absolute; inset: 0; z-index: 0;
+  background:
+    radial-gradient(ellipse 70% 60% at 50% -10%, rgba(91,143,255,.18) 0%, transparent 65%),
+    radial-gradient(ellipse 40% 40% at 80% 80%, rgba(167,139,250,.10) 0%, transparent 60%);
+}
+.hero-grid {
+  position: absolute; inset: 0; z-index: 0; opacity: .06;
+  background-image:
+    linear-gradient(var(--border) 1px, transparent 1px),
+    linear-gradient(90deg, var(--border) 1px, transparent 1px);
+  background-size: 40px 40px;
+}
+.hero-content { position: relative; z-index: 1; }
+.hero-eyebrow {
+  font-size: 9px; font-weight: 700; letter-spacing: 5px;
+  color: var(--accent); text-transform: uppercase;
+  margin-bottom: 14px;
+  display: inline-flex; align-items: center; gap: 8px;
+}
+.hero-eyebrow::before, .hero-eyebrow::after {
+  content: ''; display: block; width: 24px; height: 1px;
+  background: var(--accent); opacity: .5;
+}
+.hero-title {
+  font-size: clamp(32px, 7vw, 60px);
+  font-weight: 800; letter-spacing: -2px; line-height: 1.05;
+  margin-bottom: 18px;
+}
+.hero-title em { color: var(--accent); font-style: normal; }
+.hero-sub {
+  font-size: 14px; color: var(--muted2);
+  max-width: 520px; margin: 0 auto 28px;
+  line-height: 1.75;
+}
+.hero-badges { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; }
+.badge {
+  font-size: 9px; font-weight: 700; letter-spacing: 2px;
+  padding: 5px 12px; border-radius: 50px;
+  border: 1px solid; text-transform: uppercase;
+}
+.badge-blue  { background: rgba(91,143,255,.1);  color: var(--accent);  border-color: rgba(91,143,255,.3); }
+.badge-green { background: rgba(52,211,153,.1);  color: var(--success); border-color: rgba(52,211,153,.3); }
+.badge-purple{ background: rgba(167,139,250,.1); color: var(--accent2); border-color: rgba(167,139,250,.3); }
+
+/* ── LAYOUT ── */
+.container { max-width: 880px; margin: 0 auto; padding: 0 24px 80px; }
+
+/* ── CHAPTER DIVIDER ── */
+.chapter {
+  display: flex; align-items: center; gap: 16px;
+  margin: 64px 0 32px;
+}
+.chapter-num {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px; font-weight: 600; color: var(--accent);
+  background: rgba(91,143,255,.12); border: 1px solid rgba(91,143,255,.3);
+  padding: 4px 10px; border-radius: 6px; white-space: nowrap;
+}
+.chapter-title {
+  font-size: clamp(18px, 4vw, 26px);
+  font-weight: 800; letter-spacing: -.5px;
+}
+.chapter-line {
+  flex: 1; height: 1px;
+  background: linear-gradient(to right, var(--border), transparent);
+}
+
+/* ── CARD ── */
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  margin-bottom: 14px;
+  overflow: hidden;
+}
+.card-header {
+  padding: 16px 20px 12px;
+  border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; gap: 10px;
+}
+.card-icon { font-size: 18px; line-height: 1; }
+.card-title-text {
+  font-size: 14px; font-weight: 700;
+}
+.card-body {
+  padding: 16px 20px;
+  font-size: 13px; color: var(--muted2); line-height: 1.8;
+}
+.card-body strong { color: var(--text); font-weight: 700; }
+.card-body code {
+  font-family: 'JetBrains Mono', monospace; font-size: 11px;
+  background: var(--surface2); color: var(--accent);
+  padding: 2px 6px; border-radius: 4px;
+}
+
+/* ── ILLUSTRATION: SCREEN LAYOUT ── */
+.screen-layout {
+  display: flex;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  overflow: hidden;
+  margin-bottom: 14px;
+  background: var(--surface);
+  position: relative;
+}
+.screen-sidebar {
+  width: 160px;
+  flex-shrink: 0;
+  background: var(--surface2);
+  border-right: 1px solid var(--border);
+  padding: 14px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.screen-main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+.screen-preview {
+  flex: 1;
+  background: var(--bg);
+  background-image:
+    linear-gradient(45deg, #0d0d12 25%, transparent 25%),
+    linear-gradient(-45deg, #0d0d12 25%, transparent 25%),
+    linear-gradient(45deg, transparent 75%, #0d0d12 75%),
+    linear-gradient(-45deg, transparent 75%, #0d0d12 75%);
+  background-size: 10px 10px;
+  background-position: 0 0, 0 5px, 5px -5px, -5px 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 14px;
+  min-height: 160px;
+}
+.screen-editor {
+  height: 72px;
+  background: var(--surface);
+  border-top: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  padding: 0 14px;
+  gap: 8px;
+}
+
+/* Label arrows */
+.ann {
+  position: absolute;
+  font-size: 9px; font-weight: 700; letter-spacing: 1.5px;
+  color: var(--accent); text-transform: uppercase;
+  background: rgba(91,143,255,.12); border: 1px solid rgba(91,143,255,.3);
+  padding: 3px 8px; border-radius: 4px;
+  pointer-events: none;
+}
+
+/* ── ILLUSTRATION: GRID ── */
+.illus-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 3px;
+  background: #000;
+  border-radius: 10px;
+  padding: 3px;
+  border: 1px solid #333;
+  width: 160px;
+}
+.illus-cell {
+  aspect-ratio: 16/9;
+  border-radius: 5px;
+  display: flex; align-items: center; justify-content: center;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px; font-weight: 600;
+}
+.ic1 { background: rgba(91,143,255,.25); color: var(--accent); }
+.ic2 { background: rgba(167,139,250,.25); color: var(--accent2); }
+.ic3 { background: rgba(52,211,153,.25); color: var(--success); }
+.ic4 { background: rgba(251,191,36,.25); color: var(--warn); }
+
+/* ── ILLUSTRATION: SCROLL ZONES ── */
+.illus-scroll {
+  background: #000;
+  border-radius: 10px;
+  border: 1px solid #333;
+  overflow: hidden;
+  width: 120px;
+}
+.illus-zone {
+  width: 100%;
+  aspect-ratio: 2/1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  font-size: 8px; font-weight: 700;
+  letter-spacing: 1px; text-transform: uppercase;
+  gap: 2px;
+}
+.illus-zone + .illus-zone { border-top: 2px solid #1a1a24; }
+.iz-hidden {
+  background: rgba(20,20,32,.9);
+  color: var(--muted);
+  opacity: .7;
+}
+.iz-main {
+  background: rgba(91,143,255,.12);
+  color: rgba(91,143,255,.9);
+  outline: 2px solid rgba(91,143,255,.5);
+  outline-offset: -2px;
+}
+.iz-badge {
+  font-size: 6px;
+  background: rgba(91,143,255,.9);
+  color: #fff;
+  padding: 1px 4px; border-radius: 2px;
+}
+
+/* ── STEP FLOW ── */
+.steps { display: flex; flex-direction: column; gap: 0; }
+.step {
+  display: flex; gap: 20px; align-items: flex-start;
+  position: relative;
+}
+.step + .step { margin-top: 0; }
+.step + .step .step-track::before {
+  content: ''; position: absolute; top: 0; left: 14px;
+  width: 1px; height: 100%;
+  background: var(--border);
+  z-index: 0;
+}
+.step-left {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  flex-shrink: 0;
+  padding-top: 4px;
+}
+.step-track {
+  display: flex; flex-direction: column; align-items: center;
+  position: relative;
+}
+.step-num {
+  width: 32px; height: 32px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  display: flex; align-items: center; justify-content: center;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 13px; font-weight: 700; color: #fff;
+  position: relative; z-index: 1;
+  flex-shrink: 0;
+  box-shadow: 0 0 20px rgba(91,143,255,.3);
+}
+.step-line {
+  width: 1px; flex: 1;
+  min-height: 32px;
+  background: linear-gradient(to bottom, rgba(91,143,255,.3), rgba(91,143,255,.05));
+}
+.step-right {
+  flex: 1;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  overflow: hidden;
+  margin-bottom: 16px;
+}
+.step-header {
+  padding: 14px 18px 10px;
+  display: flex; align-items: center; gap: 10px;
+  border-bottom: 1px solid var(--border);
+}
+.step-icon { font-size: 16px; }
+.step-title-text { font-size: 14px; font-weight: 700; }
+.step-body {
+  padding: 14px 18px;
+  font-size: 13px; color: var(--muted2); line-height: 1.8;
+}
+.step-body strong { color: var(--text); font-weight: 700; }
+.step-body code {
+  font-family: 'JetBrains Mono', monospace; font-size: 11px;
+  background: var(--surface2); color: var(--accent);
+  padding: 2px 6px; border-radius: 4px;
+}
+.step-illus {
+  padding: 14px 18px 16px;
+  border-top: 1px solid var(--border);
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  background: var(--surface2);
+}
+
+/* ── SMALL ILLUSTRATIONS ── */
+.illus-dropzone {
+  width: 140px;
+  height: 72px;
+  border: 2px dashed rgba(91,143,255,.4);
+  border-radius: 10px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  background: rgba(91,143,255,.04);
+}
+.illus-dropzone span:first-child { font-size: 18px; }
+.illus-dropzone span:last-child { font-size: 8px; color: var(--muted); font-weight: 700; letter-spacing: 1px; text-transform: uppercase; }
+
+.illus-pool {
+  display: grid;
+  grid-template-columns: repeat(3, 28px);
+  gap: 4px;
+}
+.pool-thumb {
+  width: 28px; height: 28px;
+  border-radius: 5px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 11px;
+  border: 1px solid var(--border);
+}
+.pt1 { background: rgba(91,143,255,.2); }
+.pt2 { background: rgba(167,139,250,.2); }
+.pt3 { background: rgba(52,211,153,.2); }
+.pt4 { background: rgba(251,191,36,.2); }
+
+.illus-drag-arrow {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  color: var(--accent);
+  opacity: .7;
+  width: 28px;
+}
+
+.illus-gap-bar {
+  display: flex; align-items: center; gap: 0; margin: 8px 0;
+  height: 40px; border-radius: 8px; overflow: hidden;
+}
+.gb-a { flex: 1; background: rgba(91,143,255,.25); display: flex; align-items: center; justify-content: flex-end; padding-right: 4px; font-size: 9px; color: var(--accent); font-weight: 700; font-family: 'JetBrains Mono', monospace; }
+.gb-trim { width: 12px; background: repeating-linear-gradient(45deg, rgba(251,191,36,.3) 0px, rgba(251,191,36,.3) 2px, transparent 2px, transparent 4px); border: 1px dashed rgba(251,191,36,.4); }
+.gb-gap { width: 14px; background: var(--bg); display: flex; align-items: center; justify-content: center; font-size: 7px; color: var(--warn); font-weight: 700; writing-mode: vertical-lr; }
+.gb-b { flex: 1; background: rgba(167,139,250,.25); display: flex; align-items: center; justify-content: flex-start; padding-left: 4px; font-size: 9px; color: var(--accent2); font-weight: 700; font-family: 'JetBrains Mono', monospace; }
+
+.illus-output {
+  width: 60px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  overflow: hidden;
+}
+.oz {
+  aspect-ratio: 1/1;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  font-size: 7px; font-weight: 700;
+  letter-spacing: .5px; text-transform: uppercase;
+}
+.oz + .oz { border-top: 1px solid var(--border); }
+.oz-top { background: rgba(20,20,32,.8); color: var(--muted); }
+.oz-main { background: rgba(91,143,255,.12); color: var(--accent); }
+.oz-bot { background: rgba(20,20,32,.8); color: var(--muted); }
+
+/* ── MODE EXPLANATION ── */
+.mode-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+@media (max-width: 600px) {
+  .mode-grid { grid-template-columns: 1fr; }
+}
+.mode-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 20px;
+  position: relative;
+  overflow: hidden;
+}
+.mode-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  opacity: .06;
+  pointer-events: none;
+}
+.mode-card-split::before { background: radial-gradient(circle at 0 0, var(--accent), transparent 70%); }
+.mode-card-vscroll::before { background: radial-gradient(circle at 100% 0, var(--success), transparent 70%); }
+.mode-label {
+  font-size: 9px; font-weight: 700; letter-spacing: 2px;
+  text-transform: uppercase; margin-bottom: 8px;
+}
+.mode-card-split .mode-label { color: var(--accent); }
+.mode-card-vscroll .mode-label { color: var(--success); }
+.mode-name { font-size: 16px; font-weight: 800; margin-bottom: 10px; }
+.mode-desc { font-size: 12px; color: var(--muted2); line-height: 1.7; }
+.mode-desc strong { color: var(--text); }
+
+/* ── ADJUST MODAL ILLUS ── */
+.illus-modal {
+  background: rgba(0,0,0,.85);
+  border-radius: 12px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  width: fit-content;
+}
+.illus-modal-frame {
+  width: 140px;
+  aspect-ratio: 16/9;
+  background: #111;
+  border: 2px solid var(--border);
+  border-radius: 8px;
+  overflow: hidden;
+  position: relative;
+  cursor: move;
+}
+.illus-modal-img {
+  position: absolute;
+  inset: -15%;
+  background: linear-gradient(135deg, rgba(91,143,255,.3) 0%, rgba(167,139,250,.2) 100%);
+  border-radius: 4px;
+}
+.illus-modal-guide {
+  position: absolute;
+  inset: 0;
+  border: 2px solid rgba(91,143,255,.7);
+}
+.illus-modal-guide::before {
+  content: '';
+  position: absolute;
+  left: 50%; top: 0; bottom: 0;
+  width: 1px; background: rgba(91,143,255,.5);
+  transform: translateX(-50%);
+}
+.illus-modal-guide::after {
+  content: '';
+  position: absolute;
+  top: 50%; left: 0; right: 0;
+  height: 1px; background: rgba(91,143,255,.5);
+  transform: translateY(-50%);
+}
+.illus-modal-btns {
+  display: flex; gap: 6px;
+}
+.illus-btn-r {
+  font-size: 9px; font-weight: 700; padding: 5px 10px;
+  background: transparent; color: var(--muted);
+  border: 1px solid var(--border); border-radius: 50px;
+  font-family: 'Syne', sans-serif;
+}
+.illus-btn-c {
+  font-size: 9px; font-weight: 700; padding: 5px 12px;
+  background: linear-gradient(135deg, var(--success), #059669);
+  color: #000; border: none; border-radius: 50px;
+  font-family: 'Syne', sans-serif;
+}
+.illus-scale-row {
+  display: flex; gap: 6px; align-items: center;
+}
+.illus-sb {
+  width: 22px; height: 22px;
+  background: var(--surface2); color: var(--text);
+  border: 1px solid var(--border); border-radius: 5px;
+  font-size: 13px;
+  display: flex; align-items: center; justify-content: center;
+}
+.illus-sv {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px; color: var(--accent); min-width: 36px; text-align: center;
+}
+
+/* ── TIPS ── */
+.tip-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 12px;
+  margin-bottom: 14px;
+}
+.tip {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 16px 18px;
+}
+.tip-icon { font-size: 20px; margin-bottom: 8px; }
+.tip-title { font-size: 13px; font-weight: 700; margin-bottom: 6px; }
+.tip-text { font-size: 12px; color: var(--muted2); line-height: 1.7; }
+.tip-text strong { color: var(--text); }
+
+/* ── WARN ── */
+.warn-box {
+  background: rgba(251,191,36,.06);
+  border: 1px solid rgba(251,191,36,.25);
+  border-radius: 10px;
+  padding: 14px 18px;
+  font-size: 12px; color: var(--warn); line-height: 1.7;
+  margin-top: 16px; margin-bottom: 14px;
+}
+.warn-box strong { font-weight: 700; }
+
+.info-box {
+  background: rgba(91,143,255,.06);
+  border: 1px solid rgba(91,143,255,.2);
+  border-radius: 10px;
+  padding: 14px 18px;
+  font-size: 12px; color: var(--muted2); line-height: 1.7;
+  margin-top: 12px; margin-bottom: 14px;
+}
+.info-box strong { color: var(--accent); font-weight: 700; }
+
+/* ── SPEC TABLE ── */
+.spec-table { width: 100%; border-collapse: collapse; }
+.spec-table th {
+  font-size: 9px; font-weight: 700; letter-spacing: 2px;
+  text-transform: uppercase; color: var(--muted);
+  padding: 10px 14px; text-align: left;
+  border-bottom: 1px solid var(--border); background: var(--surface2);
+}
+.spec-table td {
+  font-size: 12px; padding: 11px 14px;
+  border-bottom: 1px solid var(--border); color: var(--muted2);
+  vertical-align: top;
+}
+.spec-table tr:last-child td { border-bottom: none; }
+.spec-table td:first-child { color: var(--text); font-weight: 700; min-width: 160px; }
+.spec-table td code {
+  font-family: 'JetBrains Mono', monospace; font-size: 11px;
+  background: var(--surface2); color: var(--accent);
+  padding: 1px 5px; border-radius: 3px;
+}
+
+/* ── FOOTER ── */
+.footer {
+  text-align: center; padding: 48px 24px;
+  border-top: 1px solid var(--border);
+  font-size: 11px; color: var(--muted);
+  font-family: 'JetBrains Mono', monospace;
+}
+
+/* ── FLOW DIAGRAM ── */
+.flow {
+  display: flex;
+  gap: 0;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  padding-bottom: 8px;
+  align-items: center;
+  margin-bottom: 14px;
+}
+.flow-item {
+  flex-shrink: 0;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 12px 16px;
+  font-size: 12px;
+  font-weight: 700;
+  text-align: center;
+  min-width: 100px;
+}
+.flow-item small {
+  display: block;
+  font-size: 9px;
+  color: var(--muted2);
+  font-weight: 400;
+  margin-top: 3px;
+  letter-spacing: .5px;
+}
+.flow-arrow {
+  flex-shrink: 0;
+  font-size: 16px;
+  color: var(--accent);
+  padding: 0 6px;
+  opacity: .6;
+}
+
+/* ── VSCROLL DIAGRAM ── */
+.illus-vslot-bar {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 4px;
+  width: 200px;
+}
+.illus-vslot {
+  aspect-ratio: 16/9;
+  border-radius: 5px;
+  border: 2px solid var(--border);
+  display: flex; align-items: center; justify-content: center;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 9px; font-weight: 600;
+}
+.ivs-a { background: rgba(91,143,255,.2); border-color: var(--success); color: var(--success); }
+.ivs-b { background: rgba(167,139,250,.15); border-color: var(--accent2); color: var(--accent2); }
+.ivs-c { background: rgba(52,211,153,.15); border-color: var(--success); color: var(--success); }
+.ivs-d { background: rgba(251,191,36,.15); border-color: var(--warn); color: var(--warn); }
+
+/* ── COMPARISON ── */
+.compare-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+@media (max-width: 540px) {
+  .compare-grid { grid-template-columns: 1fr; }
+}
+.compare-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  overflow: hidden;
+}
+.compare-head {
+  padding: 10px 16px;
+  font-size: 11px; font-weight: 700; letter-spacing: 1.5px;
+  text-transform: uppercase;
+}
+.compare-head-bad { background: rgba(248,113,113,.1); color: var(--danger); border-bottom: 1px solid rgba(248,113,113,.2); }
+.compare-head-good { background: rgba(52,211,153,.1); color: var(--success); border-bottom: 1px solid rgba(52,211,153,.2); }
+.compare-body { padding: 12px 16px; font-size: 12px; color: var(--muted2); line-height: 1.7; }
+.compare-body strong { color: var(--text); }
+</style>
+</head>
+<body>
+
+<!-- ── HERO ── -->
+<div class="hero">
+  <div class="hero-bg"></div>
+  <div class="hero-grid"></div>
+  <div class="hero-content">
+    <div class="hero-eyebrow">BEGINNER'S GUIDE</div>
+    <h1 class="hero-title">X Split <em>Pro</em><br>はじめてのガイド</h1>
+    <p class="hero-sub">Xの4枚グリッド投稿を活用した「隠し画像」付き投稿を、
+    ゼロから作れるように丁寧に解説します。</p>
+    <div class="hero-badges">
+      <span class="badge badge-blue">初心者向け</span>
+      <span class="badge badge-green">図解つき</span>
+      <span class="badge badge-purple">全手順網羅</span>
+    </div>
+  </div>
+</div>
+
+<div class="container">
+
+  <!-- ════════════════════════════════
+       CHAPTER 1: そもそも何ができるの？
+  ════════════════════════════════ -->
+  <div class="chapter">
+    <span class="chapter-num">01</span>
+    <h2 class="chapter-title">そもそも何ができるの？</h2>
+    <div class="chapter-line"></div>
+  </div>
+
+  <div class="card">
+    <div class="card-header">
+      <span class="card-icon">📱</span>
+      <span class="card-title-text">Xの4枚グリッド投稿の仕組み</span>
+    </div>
+    <div class="card-body">
+      Xに画像を<strong>4枚まとめて投稿</strong>すると、タイムライン上では<strong>2×2のグリッド</strong>に並びます。
+      各セルは <strong>16:9（横長）</strong> の比率で切り取って表示されます。<br><br>
+      さらに、グリッドの1枚を<strong>タップ</strong>すると<strong>縦にスクロールできるビュー</strong>に切り替わります。
+      このビューには<strong>上下に隠れた部分</strong>があり、スクロールしないと見えません。
+    </div>
+  </div>
+
+  <!-- グリッドと隠しゾーンの図解 -->
+  <div style="display:flex;gap:20px;flex-wrap:wrap;margin-bottom:14px;">
+    <div style="flex:1;min-width:240px;background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:20px;">
+      <div style="font-size:9px;font-weight:700;letter-spacing:2px;color:var(--muted);text-transform:uppercase;margin-bottom:14px;text-align:center;">タイムライン表示</div>
+      <div style="display:flex;justify-content:center;">
+        <div class="illus-grid">
+          <div class="illus-cell ic1">①</div>
+          <div class="illus-cell ic2">②</div>
+          <div class="illus-cell ic3">③</div>
+          <div class="illus-cell ic4">④</div>
+        </div>
+      </div>
+      <div style="text-align:center;margin-top:10px;font-size:11px;color:var(--muted2);">2×2グリッド / 各セル 16:9</div>
+    </div>
+    <div style="font-size:22px;color:var(--accent);display:flex;align-items:center;padding:0 4px;">→</div>
+    <div style="flex:1;min-width:240px;background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:20px;">
+      <div style="font-size:9px;font-weight:700;letter-spacing:2px;color:var(--muted);text-transform:uppercase;margin-bottom:14px;text-align:center;">1枚タップ後（スクロールビュー）</div>
+      <div style="display:flex;justify-content:center;align-items:center;gap:16px;">
+        <div class="illus-scroll">
+          <div class="illus-zone iz-hidden"><span>↑ 隠し（上）</span><span style="font-size:6px;opacity:.6;">スクロールで表示</span></div>
+          <div class="illus-zone iz-main">VISIBLE<div class="iz-badge">見える</div></div>
+          <div class="illus-zone iz-hidden"><span>↓ 隠し（下）</span><span style="font-size:6px;opacity:.6;">スクロールで表示</span></div>
+        </div>
+        <div style="font-size:11px;color:var(--muted2);line-height:1.9;max-width:120px;">
+          <span style="color:var(--muted);">■</span> 上：下スクロールで表示<br>
+          <span style="color:var(--accent);">■</span> 中央：常に見える部分<br>
+          <span style="color:var(--muted);">■</span> 下：上スクロールで表示
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header">
+      <span class="card-icon">✨</span>
+      <span class="card-title-text">X Split Pro でできること</span>
+    </div>
+    <div class="card-body">
+      <strong>① 1枚を分割モード：</strong>大きな1枚の画像を4分割し、隣接セルの隙間（Gap）を自動補正して、
+      タイムライン上でシームレスにつながって見えるようにします。<br><br>
+      <strong>② 縦スクロールモード：</strong>4枚の別々の画像を3:4サイズで書き出し、
+      タップすると縦4枚に展開されるグリッドを作れます。
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════
+       CHAPTER 2: 画面の見方
+  ════════════════════════════════ -->
+  <div class="chapter">
+    <span class="chapter-num">02</span>
+    <h2 class="chapter-title">画面の見方</h2>
+    <div class="chapter-line"></div>
+  </div>
+
+  <!-- 画面レイアウト図解 -->
+  <div style="background:var(--surface);border:1px solid var(--border);border-radius:14px;overflow:hidden;margin-bottom:20px;">
+    <div style="padding:12px 16px;border-bottom:1px solid var(--border);font-size:9px;font-weight:700;letter-spacing:2px;color:var(--muted);text-transform:uppercase;">画面構成（デスクトップ）</div>
+    <div style="display:flex;height:220px;">
+      <!-- Sidebar -->
+      <div style="width:160px;flex-shrink:0;background:var(--surface2);border-right:1px solid var(--border);padding:12px 10px;display:flex;flex-direction:column;gap:8px;">
+        <div style="font-size:11px;font-weight:800;color:var(--text);">X Split <span style="color:var(--accent)">Pro</span></div>
+        <div style="height:1px;background:var(--border);"></div>
+        <div style="font-size:7px;font-weight:700;letter-spacing:2px;color:var(--muted);text-transform:uppercase;">Mode</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:2px;background:var(--bg);border-radius:6px;padding:2px;border:1px solid var(--border);">
+          <div style="padding:5px;border-radius:4px;background:var(--accent);font-size:7px;font-weight:700;text-align:center;">分割</div>
+          <div style="padding:5px;border-radius:4px;font-size:7px;font-weight:700;text-align:center;color:var(--muted);">縦スクロール</div>
+        </div>
+        <div style="border:2px dashed rgba(91,143,255,.3);border-radius:7px;padding:8px;text-align:center;background:rgba(91,143,255,.03);">
+          <div style="font-size:12px;">🖼️</div>
+          <div style="font-size:7px;color:var(--muted);margin-top:2px;">画像ドロップ</div>
+        </div>
+        <div style="font-size:7px;font-weight:700;letter-spacing:2px;color:var(--muted);text-transform:uppercase;">Gap / Range</div>
+        <div style="height:3px;background:var(--surface3);border-radius:3px;position:relative;"><div style="position:absolute;left:0;top:0;bottom:0;width:55%;background:var(--accent);border-radius:3px;"></div></div>
+        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:3px;margin-top:2px;">
+          <div style="aspect-ratio:1;background:rgba(91,143,255,.2);border-radius:4px;border:1px solid rgba(91,143,255,.3);"></div>
+          <div style="aspect-ratio:1;background:rgba(167,139,250,.2);border-radius:4px;border:1px solid rgba(167,139,250,.3);"></div>
+          <div style="aspect-ratio:1;background:rgba(52,211,153,.2);border-radius:4px;border:1px solid rgba(52,211,153,.3);"></div>
+          <div style="aspect-ratio:1;background:rgba(251,191,36,.2);border-radius:4px;border:1px solid rgba(251,191,36,.3);"></div>
+        </div>
+      </div>
+      <!-- Main area -->
+      <div style="flex:1;display:flex;flex-direction:column;">
+        <!-- Preview -->
+        <div style="flex:1;background:var(--bg);background-image:linear-gradient(45deg,#0d0d12 25%,transparent 25%),linear-gradient(-45deg,#0d0d12 25%,transparent 25%),linear-gradient(45deg,transparent 75%,#0d0d12 75%),linear-gradient(-45deg,transparent 75%,#0d0d12 75%);background-size:10px 10px;background-position:0 0,0 5px,5px -5px,-5px 0;display:flex;align-items:center;justify-content:center;position:relative;">
+          <div style="position:absolute;top:6px;left:10px;font-size:7px;font-weight:700;letter-spacing:2px;color:var(--muted);text-transform:uppercase;">Timeline Preview</div>
+          <div class="illus-grid" style="width:120px;">
+            <div class="illus-cell ic1" style="font-size:8px;">①</div>
+            <div class="illus-cell ic2" style="font-size:8px;">②</div>
+            <div class="illus-cell ic3" style="font-size:8px;">③</div>
+            <div class="illus-cell ic4" style="font-size:8px;">④</div>
+          </div>
+        </div>
+        <!-- Editor panel -->
+        <div style="height:68px;background:var(--surface);border-top:1px solid var(--border);display:flex;align-items:center;padding:0 12px;gap:8px;">
+          <div style="display:flex;gap:4px;">
+            <div style="padding:5px 10px;border:1px solid var(--accent);border-radius:7px;font-size:9px;font-weight:700;color:var(--accent);background:rgba(91,143,255,.15);">①</div>
+            <div style="padding:5px 10px;border:1px solid var(--border);border-radius:7px;font-size:9px;font-weight:700;color:var(--muted);background:var(--surface2);">②</div>
+            <div style="padding:5px 10px;border:1px solid var(--border);border-radius:7px;font-size:9px;font-weight:700;color:var(--muted);background:var(--surface2);">③</div>
+            <div style="padding:5px 10px;border:1px solid var(--border);border-radius:7px;font-size:9px;font-weight:700;color:var(--muted);background:var(--surface2);">④</div>
+          </div>
+          <div style="flex:1;"></div>
+          <div style="font-size:9px;color:var(--danger);text-decoration:underline;cursor:pointer;">Clear</div>
+          <div style="padding:7px 16px;background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;border-radius:50px;font-size:10px;font-weight:800;letter-spacing:1px;">ZIP 書き出し</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 各エリアの説明 -->
+  <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px;margin-bottom:14px;">
+    <div class="card">
+      <div class="card-header"><span class="card-icon">🗂️</span><span class="card-title-text">① サイドバー（左）</span></div>
+      <div class="card-body">
+        モード切替 / 画像ドロップゾーン / Gap スライダー / 読み込んだ画像プールがあります。<strong>ここから操作を始めます。</strong>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-header"><span class="card-icon">🖥️</span><span class="card-title-text">② プレビューエリア（中央）</span></div>
+      <div class="card-body">
+        Xのタイムラインをリアルタイムで再現します。セルをタップして<strong>隠しゾーンの設定画面</strong>に切り替えられます。
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-header"><span class="card-icon">⬇️</span><span class="card-title-text">③ エディターパネル（下）</span></div>
+      <div class="card-body">
+        スロット（1〜4）の切り替えと<strong>ZIP書き出し</strong>ボタンがあります。スマホでは PNG を1枚ずつ保存します。
+      </div>
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════
+       CHAPTER 3: 2つのモード
+  ════════════════════════════════ -->
+  <div class="chapter">
+    <span class="chapter-num">03</span>
+    <h2 class="chapter-title">2つのモードの違い</h2>
+    <div class="chapter-line"></div>
+  </div>
+
+  <div class="mode-grid">
+    <div class="mode-card mode-card-split">
+      <div class="mode-label">Mode A</div>
+      <div class="mode-name">1枚を分割</div>
+      <div style="display:flex;justify-content:center;margin:12px 0;">
+        <div class="illus-grid" style="width:120px;">
+          <div class="illus-cell ic1" style="font-size:8px;">↖</div>
+          <div class="illus-cell ic2" style="font-size:8px;">↗</div>
+          <div class="illus-cell ic3" style="font-size:8px;">↙</div>
+          <div class="illus-cell ic4" style="font-size:8px;">↘</div>
+        </div>
+      </div>
+      <div class="mode-desc">
+        <strong>1枚の大きな画像</strong>を自動で4分割。<br>
+        グリッドの隙間を「Gap補正」で自動修正するため、投稿後もシームレスに見えます。<br><br>
+        各セルに<strong>上下の隠し画像</strong>を個別に設定できます。
+      </div>
+    </div>
+    <div class="mode-card mode-card-vscroll">
+      <div class="mode-label">Mode B</div>
+      <div class="mode-name">縦スクロール</div>
+      <div style="display:flex;justify-content:center;margin:12px 0;">
+        <div class="illus-vslot-bar">
+          <div class="illus-vslot ivs-a">1</div>
+          <div class="illus-vslot ivs-b">2</div>
+          <div class="illus-vslot ivs-c">3</div>
+          <div class="illus-vslot ivs-d">4</div>
+        </div>
+      </div>
+      <div class="mode-desc">
+        <strong>4枚の別々の画像</strong>をそれぞれのセルに配置。<br>
+        各画像を <code>600×800px (3:4)</code> で書き出し、Xに投稿するとタップで縦4枚が展開されます。<br><br>
+        各スロットに画像を個別に調整できます。
+      </div>
+    </div>
+  </div>
+
+  <div class="compare-grid">
+    <div class="compare-card">
+      <div class="compare-head compare-head-bad">✗ Gap補正なしの問題</div>
+      <div class="compare-body">
+        1枚を均等分割してそのまま投稿すると、グリッドの<strong>隙間（約12px）</strong>のぶんだけ境界付近が欠けて、画像がずれて見えます。
+      </div>
+    </div>
+    <div class="compare-card">
+      <div class="compare-head compare-head-good">✓ Gap補正ありで解決</div>
+      <div class="compare-body">
+        各セルの境界側を <strong>gapSize ÷ 2 px</strong> 削るため、投稿後のグリッドでも元の画像がシームレスにつながって見えます。
+      </div>
+    </div>
+  </div>
+
+  <!-- Gap図解 -->
+  <div style="background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:20px;margin-bottom:14px;">
+    <div style="font-size:9px;font-weight:700;letter-spacing:2px;color:var(--muted);text-transform:uppercase;margin-bottom:16px;text-align:center;">Gap補正の仕組み（gapSize = 12px の場合）</div>
+    <div class="illus-gap-bar" style="margin:0 auto;max-width:320px;">
+      <div class="gb-a">セル①</div>
+      <div class="gb-trim"></div>
+      <div class="gb-gap">GAP</div>
+      <div class="gb-trim"></div>
+      <div class="gb-b">セル②</div>
+    </div>
+    <div style="text-align:center;font-size:11px;color:var(--muted2);margin-top:10px;">
+      斜線部 = 各境界から <strong style="color:var(--warn);">6px</strong> ずつ削除（12÷2）
+    </div>
+  </div>
+
+
+  <!-- ════════════════════════════════
+       CHAPTER 4: 全手順（ステップ）
+  ════════════════════════════════ -->
+  <div class="chapter">
+    <span class="chapter-num">04</span>
+    <h2 class="chapter-title">全手順（ステップバイステップ）</h2>
+    <div class="chapter-line"></div>
+  </div>
+
+  <!-- 全体フロー -->
+  <div class="flow">
+    <div class="flow-item">STEP 1<small>モード選択</small></div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-item">STEP 2<small>画像を読み込む</small></div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-item">STEP 3<small>セルに配置</small></div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-item">STEP 4<small>位置を調整</small></div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-item">STEP 5<small>隠しゾーン設定</small></div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-item">STEP 6<small>Gap調整 &amp; 書き出し</small></div>
+  </div>
+
+  <div class="steps">
+
+    <!-- STEP 1 -->
+    <div class="step">
+      <div class="step-left">
+        <div class="step-track">
+          <div class="step-num">1</div>
+          <div class="step-line"></div>
+        </div>
+      </div>
+      <div class="step-right">
+        <div class="step-header">
+          <span class="step-icon">🎛️</span>
+          <span class="step-title-text">モードを選ぶ</span>
+        </div>
+        <div class="step-body">
+          サイドバー上部の<strong>モード切替ボタン</strong>をタップします。<br>
+          <strong>「1枚を分割」</strong>… 1枚の大きな画像をグリッドに分割したい場合<br>
+          <strong>「縦スクロール」</strong>… 4枚バラバラの画像を使う場合
+        </div>
+        <div class="step-illus">
+          <div style="background:var(--bg);border-radius:8px;padding:3px;border:1px solid var(--border);display:grid;grid-template-columns:1fr 1fr;gap:2px;width:fit-content;">
+            <div style="padding:8px 14px;border-radius:6px;background:var(--accent);font-size:11px;font-weight:700;color:#fff;">1枚を分割</div>
+            <div style="padding:8px 14px;border-radius:6px;background:transparent;font-size:11px;font-weight:700;color:var(--muted);">縦スクロール</div>
+          </div>
+          <div style="font-size:11px;color:var(--muted2);padding-top:4px;">← 青くハイライトされた方が選択中</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- STEP 2 -->
+    <div class="step">
+      <div class="step-left">
+        <div class="step-track">
+          <div class="step-num">2</div>
+          <div class="step-line"></div>
+        </div>
+      </div>
+      <div class="step-right">
+        <div class="step-header">
+          <span class="step-icon">📂</span>
+          <span class="step-title-text">画像を読み込む</span>
+        </div>
+        <div class="step-body">
+          サイドバーの<strong>ドロップゾーン（点線枠）</strong>に画像をドラッグ&ドロップするか、
+          タップしてファイルを選択します。<br>
+          読み込んだ画像は下の<strong>Imagesプール</strong>にサムネイルで表示されます。複数枚まとめて読み込みOK。
+        </div>
+        <div class="step-illus" style="align-items:center;">
+          <div class="illus-dropzone">
+            <span>🖼️</span>
+            <span>画像をドロップ</span>
+          </div>
+          <div style="font-size:16px;color:var(--accent);">→</div>
+          <div>
+            <div style="font-size:9px;font-weight:700;letter-spacing:2px;color:var(--muted);text-transform:uppercase;margin-bottom:6px;">Images プール</div>
+            <div class="illus-pool">
+              <div class="pool-thumb pt1">🌅</div>
+              <div class="pool-thumb pt2">🏙️</div>
+              <div class="pool-thumb pt3">🌿</div>
+              <div class="pool-thumb pt4">⭐</div>
+              <div class="pool-thumb" style="background:var(--surface2);">＋</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- STEP 3 -->
+    <div class="step">
+      <div class="step-left">
+        <div class="step-track">
+          <div class="step-num">3</div>
+          <div class="step-line"></div>
+        </div>
+      </div>
+      <div class="step-right">
+        <div class="step-header">
+          <span class="step-icon">🖱️</span>
+          <span class="step-title-text">グリッドセルに画像を配置する</span>
+        </div>
+        <div class="step-body">
+          <strong>Imagesプール</strong>のサムネイルを、プレビューエリアの<strong>グリッドのセルへドラッグ</strong>します（PC・スマホ共通）。<br><br>
+          <strong>「1枚を分割」モード：</strong>どのセルにドロップしても<strong>全4セルに自動配置</strong>され、画像調整モーダルが開きます。<br>
+          <strong>「縦スクロール」モード：</strong>ドロップしたセルのみに配置されます。
+        </div>
+        <div class="step-illus" style="align-items:center;">
+          <div class="illus-pool">
+            <div class="pool-thumb pt1" style="border:2px solid var(--accent);">🌅</div>
+          </div>
+          <div class="illus-drag-arrow">↗</div>
+          <div class="illus-grid" style="width:120px;">
+            <div class="illus-cell" style="background:rgba(91,143,255,.4);outline:3px solid var(--warn);outline-offset:-3px;font-size:8px;color:var(--warn);">DROP!</div>
+            <div class="illus-cell ic2" style="font-size:8px;">②</div>
+            <div class="illus-cell ic3" style="font-size:8px;">③</div>
+            <div class="illus-cell ic4" style="font-size:8px;">④</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- STEP 4 -->
+    <div class="step">
+      <div class="step-left">
+        <div class="step-track">
+          <div class="step-num">4</div>
+          <div class="step-line"></div>
+        </div>
+      </div>
+      <div class="step-right">
+        <div class="step-header">
+          <span class="step-icon">🔍</span>
+          <span class="step-title-text">調整モーダルで位置とスケールを決める</span>
+        </div>
+        <div class="step-body">
+          画像を配置すると<strong>調整モーダル</strong>が自動で開きます。<br><br>
+          <strong>位置調整：</strong>フレームをドラッグして画像の位置を動かします。<br>
+          <strong>スケール調整：</strong>「−」「＋」ボタンまたはピンチ / マウスホイールで拡縮します。<br>
+          <strong>青線 / 緑線</strong>が切り取り境界です。線の内側が書き出し範囲です。<br><br>
+          <strong style="color:var(--success);">「✓ 決定」</strong>をタップして確定。「リセット」で初期位置に戻せます。
+        </div>
+        <div class="step-illus" style="justify-content:center;">
+          <div class="illus-modal">
+            <div style="font-size:8px;font-weight:700;letter-spacing:2px;color:var(--muted);text-transform:uppercase;">4分割メイン — 画像を調整</div>
+            <div class="illus-modal-frame">
+              <div class="illus-modal-img"></div>
+              <div class="illus-modal-guide"></div>
+            </div>
+            <div class="illus-scale-row">
+              <div class="illus-sb">−</div>
+              <span class="illus-sv">120%</span>
+              <div class="illus-sb">＋</div>
+            </div>
+            <div style="font-size:8px;color:var(--muted);text-align:center;">ドラッグで移動 / ピンチで拡縮</div>
+            <div class="illus-modal-btns">
+              <div class="illus-btn-r">リセット</div>
+              <div class="illus-btn-c">✓ 決定</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- STEP 5 -->
+    <div class="step">
+      <div class="step-left">
+        <div class="step-track">
+          <div class="step-num">5</div>
+          <div class="step-line"></div>
+        </div>
+      </div>
+      <div class="step-right">
+        <div class="step-header">
+          <span class="step-icon">🎭</span>
+          <span class="step-title-text">隠しゾーンを設定する（任意・分割モードのみ）</span>
+        </div>
+        <div class="step-body">
+          プレビューのグリッドセルをタップすると、<strong>スクロールビュー</strong>に切り替わります。
+          ここに<strong>上下の隠し画像</strong>を設定できます。<br><br>
+          <strong>↑ HIDDEN TOP：</strong>Imagesプールから画像をドラッグ&ドロップ<br>
+          <strong>↓ HIDDEN BOTTOM：</strong>同様にドロップ<br><br>
+          各ゾーンの<strong>「⇔」ボタン</strong>で位置調整モーダルを開けます。
+          <strong>「✕」</strong>でゾーンをクリアできます。<br><br>
+          設定後は「<strong>← 4分割グリッドに戻る</strong>」ボタンで戻ります。
+        </div>
+        <div class="step-illus" style="justify-content:center;align-items:center;gap:20px;">
+          <div class="illus-scroll" style="width:100px;">
+            <div class="illus-zone iz-hidden" style="position:relative;">
+              <span>↑ HIDDEN</span>
+              <div style="position:absolute;bottom:2px;right:2px;display:flex;gap:2px;">
+                <div style="width:14px;height:14px;background:rgba(0,0,0,.7);border:1px solid var(--border);border-radius:3px;font-size:7px;display:flex;align-items:center;justify-content:center;color:var(--accent);">⇔</div>
+                <div style="width:14px;height:14px;background:rgba(0,0,0,.7);border:1px solid var(--border);border-radius:3px;font-size:7px;display:flex;align-items:center;justify-content:center;color:var(--danger);">✕</div>
+              </div>
+            </div>
+            <div class="illus-zone iz-main" style="position:relative;">
+              <span>VISIBLE</span>
+              <div class="iz-badge">見える</div>
+            </div>
+            <div class="illus-zone iz-hidden" style="position:relative;">
+              <span>↓ HIDDEN</span>
+              <div style="position:absolute;bottom:2px;right:2px;display:flex;gap:2px;">
+                <div style="width:14px;height:14px;background:rgba(0,0,0,.7);border:1px solid var(--border);border-radius:3px;font-size:7px;display:flex;align-items:center;justify-content:center;color:var(--accent);">⇔</div>
+                <div style="width:14px;height:14px;background:rgba(0,0,0,.7);border:1px solid var(--border);border-radius:3px;font-size:7px;display:flex;align-items:center;justify-content:center;color:var(--danger);">✕</div>
+              </div>
+            </div>
+          </div>
+          <div style="font-size:11px;color:var(--muted2);line-height:1.9;max-width:140px;">
+            各ゾーンに画像を<br>ドロップして設定<br><br>
+            <span style="color:var(--accent);">⇔</span> 位置調整<br>
+            <span style="color:var(--danger);">✕</span> クリア
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- STEP 6 -->
+    <div class="step">
+      <div class="step-left">
+        <div class="step-track">
+          <div class="step-num">6</div>
+        </div>
+      </div>
+      <div class="step-right">
+        <div class="step-header">
+          <span class="step-icon">💾</span>
+          <span class="step-title-text">Gap調整して書き出す</span>
+        </div>
+        <div class="step-body">
+          <strong>分割モードの場合：</strong>サイドバーの<strong>Gap Compensation スライダー</strong>で補正量を設定します（推奨：<strong>12px</strong>）。<br><br>
+          エディターパネルの<strong>「ZIP書き出し」（PC）</strong>または<strong>「PNG書き出し」（スマホ）</strong>ボタンをタップ。<br>
+          プログレスバーが100%になったらダウンロード完了。<br><br>
+          Xへは <strong>x_split_1 → 2 → 3 → 4 の順</strong>にアップロードしてください。
+        </div>
+        <div class="step-illus" style="align-items:center;gap:20px;flex-wrap:wrap;">
+          <div style="width:140px;">
+            <div style="font-size:9px;font-weight:700;color:var(--muted);letter-spacing:1px;text-transform:uppercase;margin-bottom:6px;">Gap スライダー</div>
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
+              <span style="font-size:9px;color:var(--muted);">Gap</span>
+              <span style="font-family:'JetBrains Mono',monospace;font-size:13px;font-weight:600;color:var(--accent);">12px</span>
+            </div>
+            <div style="height:4px;background:var(--surface3);border-radius:4px;position:relative;overflow:visible;">
+              <div style="position:absolute;left:0;top:0;bottom:0;width:50%;background:var(--accent);border-radius:4px;"></div>
+              <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:12px;height:12px;background:var(--accent);border-radius:50%;border:2px solid #fff;box-shadow:0 0 6px rgba(91,143,255,.6);"></div>
+            </div>
+            <div style="display:flex;justify-content:space-between;margin-top:4px;font-size:9px;color:var(--muted);">
+              <span>0</span><span style="color:var(--success);">★ 12px</span><span>24</span>
+            </div>
+          </div>
+          <div style="display:flex;flex-direction:column;align-items:center;gap:6px;">
+            <div style="display:flex;flex-direction:column;gap:4px;font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--muted2);">
+              <span>📁 x_split_1.png</span>
+              <span>📁 x_split_2.png</span>
+              <span>📁 x_split_3.png</span>
+              <span>📁 x_split_4.png</span>
+              <span>📄 README.txt</span>
+            </div>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:6px;align-items:center;">
+            <div style="padding:10px 20px;background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;border-radius:50px;font-size:11px;font-weight:800;letter-spacing:1.5px;text-transform:uppercase;">ZIP 書き出し</div>
+            <div style="font-size:9px;color:var(--muted);">PC / スマホ両対応</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /steps -->
+
+
+  <!-- ════════════════════════════════
+       CHAPTER 5: 出力ファイルの構造
+  ════════════════════════════════ -->
+  <div class="chapter">
+    <span class="chapter-num">05</span>
+    <h2 class="chapter-title">出力ファイルの構造</h2>
+    <div class="chapter-line"></div>
+  </div>
+
+  <div style="display:flex;gap:20px;flex-wrap:wrap;margin-bottom:14px;">
+    <div style="flex:1;min-width:240px;">
+      <div class="card">
+        <div class="card-header"><span class="card-icon">🔧</span><span class="card-title-text">分割モード — 675×1200px PNG</span></div>
+        <div class="card-body">
+          1スロットにつき1ファイル生成（最大4ファイル）。<br>
+          縦長1ファイルの中に3ゾーンが収まっています。<br><br>
+          <strong>上隠しゾーン：</strong> 675×262.5px<br>
+          <strong>メイン（FV）：</strong> 675×675px<br>
+          <strong>下隠しゾーン：</strong> 675×262.5px<br>
+          合計 675×1200px
+        </div>
+      </div>
+    </div>
+    <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;">
+      <div class="illus-output">
+        <div class="oz oz-top">隠し(上)</div>
+        <div class="oz oz-main">MAIN<br><span style="font-size:6px;">VISIBLE</span></div>
+        <div class="oz oz-bot">隠し(下)</div>
+      </div>
+      <div style="font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--muted2);text-align:center;">675×1200px</div>
+    </div>
+    <div style="flex:1;min-width:240px;">
+      <div class="card">
+        <div class="card-header"><span class="card-icon">📜</span><span class="card-title-text">縦スクロールモード — 600×800px PNG</span></div>
+        <div class="card-body">
+          各スロットを<strong>600×800px（3:4）</strong>で書き出し。<br>
+          4枚をXに投稿すると 2×2 グリッド表示され、タップすると縦4枚が展開されます。<br><br>
+          <strong>ファイル名：</strong> x_vscroll_1〜4.png<br>
+          <strong>投稿順：</strong>1→2→3→4の順でアップロード
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════
+       CHAPTER 6: よくある質問 & Tips
+  ════════════════════════════════ -->
+  <div class="chapter">
+    <span class="chapter-num">06</span>
+    <h2 class="chapter-title">Tips &amp; よくある疑問</h2>
+    <div class="chapter-line"></div>
+  </div>
+
+  <div class="tip-grid">
+    <div class="tip">
+      <div class="tip-icon">🔢</div>
+      <div class="tip-title">投稿はどの順番？</div>
+      <div class="tip-text"><strong>x_split_1 → 2 → 3 → 4</strong> の順にXへアップロード。逆にすると左上から順にグリッドが乱れます。</div>
+    </div>
+    <div class="tip">
+      <div class="tip-icon">📐</div>
+      <div class="tip-title">Gap推奨値は？</div>
+      <div class="tip-text">Xの実測値に合わせた<strong>12px</strong>が推奨。表示がずれる場合は0〜24pxの間で試してみてください。</div>
+    </div>
+    <div class="tip">
+      <div class="tip-icon">📱</div>
+      <div class="tip-title">スマホで使うには？</div>
+      <div class="tip-text">スマホでは PNG が1枚ずつ保存されます。<strong>「写真に追加」→長押し</strong>で保存してください（iOS）。</div>
+    </div>
+    <div class="tip">
+      <div class="tip-icon">🗂️</div>
+      <div class="tip-title">ZIPが開けない（Windows）</div>
+      <div class="tip-text">右クリック→プロパティ→<strong>「許可する」</strong>にチェック。それでも開けない場合は<strong>7-Zip</strong>を使うと解決できます。</div>
+    </div>
+    <div class="tip">
+      <div class="tip-icon">✓</div>
+      <div class="tip-title">「✓ SET」バッジの意味</div>
+      <div class="tip-text">各ゾーンの左上に出る緑バッジ。調整モーダルで「決定」を押すと表示され、<strong>位置が確定済み</strong>であることを示します。</div>
+    </div>
+    <div class="tip">
+      <div class="tip-icon">🔄</div>
+      <div class="tip-title">全てリセットしたい</div>
+      <div class="tip-text">エディターパネル左下の<strong>「Clear All」</strong>ボタンを押すと、すべての画像・設定がリセットされます。</div>
+    </div>
+    <div class="tip">
+      <div class="tip-icon">🌐</div>
+      <div class="tip-title">サーバーに送られる？</div>
+      <div class="tip-text">いいえ。全ての処理は<strong>ブラウザ内で完結</strong>しています。画像がサーバーにアップロードされることはありません。</div>
+    </div>
+    <div class="tip">
+      <div class="tip-icon">🖼️</div>
+      <div class="tip-title">対応している画像形式は？</div>
+      <div class="tip-text"><strong>JPEG・PNG・WebP・GIF</strong>など、ブラウザがサポートする形式ならOKです。</div>
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════
+       CHAPTER 7: 技術仕様
+  ════════════════════════════════ -->
+  <div class="chapter">
+    <span class="chapter-num">07</span>
+    <h2 class="chapter-title">技術仕様</h2>
+    <div class="chapter-line"></div>
+  </div>
+
+  <div class="card" style="padding:0;overflow:hidden;">
+    <table class="spec-table">
+      <thead>
+        <tr>
+          <th>項目</th>
+          <th>値 / 説明</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td>分割モード出力</td><td><code>675×1200px</code>（縦長PNG / スロットあたり）</td></tr>
+        <tr><td>各ゾーン高さ</td><td>上下隠し <code>262.5px</code>、メイン <code>675px</code></td></tr>
+        <tr><td>縦スクロール出力</td><td><code>600×800px（3:4）</code>PNG</td></tr>
+        <tr><td>グリッドセル比率</td><td><code>16:9</code>（Xのタイムライン実測値）</td></tr>
+        <tr><td>Gap補正範囲</td><td><code>0〜24px</code>（推奨: 12px）</td></tr>
+        <tr><td>対応入力形式</td><td>JPEG / PNG / WebP / GIF など</td></tr>
+        <tr><td>PC書き出し形式</td><td>JSZipによるZIP（<code>x_split_pro.zip</code> / <code>x_vscroll.zip</code>）</td></tr>
+        <tr><td>スマホ書き出し</td><td>PNG を1枚ずつダウンロード（800ms間隔）</td></tr>
+        <tr><td>使用ライブラリ</td><td>Vue 3（CDN）/ JSZip 3.10.1</td></tr>
+        <tr><td>サーバー通信</td><td>なし — 全処理をブラウザ内で完結</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+</div><!-- /container -->
+
+<div class="footer">
+  X Split Pro — Beginner's Guide &nbsp;/&nbsp; Generated for current source v1.x
+</div>
+
+</body>
+</html>
