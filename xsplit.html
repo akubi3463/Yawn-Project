@@ -217,6 +217,25 @@
     .toast.info { border-color:var(--warn); color:var(--warn); }
     ::-webkit-scrollbar { width:3px; } ::-webkit-scrollbar-thumb { background:var(--border); border-radius:4px; }
 
+    /* ━━━━ TOP BUTTON ━━━━ */
+    .top-btn {
+      position: fixed; top: 12px; left: 14px; z-index: 200;
+      font-family: 'JetBrains Mono', monospace; font-size: 9px; font-weight: 600;
+      letter-spacing: 2px; text-transform: uppercase; text-decoration: none;
+      color: var(--muted); background: rgba(17,17,24,.85); backdrop-filter: blur(8px);
+      border: 1px solid rgba(42,42,58,.7); border-radius: 8px;
+      padding: 6px 12px; display: flex; align-items: center; gap: 6px;
+      transition: color .2s, border-color .2s;
+    }
+    .top-btn:hover { color: var(--accent); border-color: rgba(91,143,255,.4); }
+
+    /* ━━━━ TABLET WARNING ━━━━ */
+    .tablet-warn {
+      font-size: 10px; font-weight: 700; letter-spacing: .5px;
+      color: var(--warn); margin-top: 6px;
+      display: flex; align-items: center; gap: 5px;
+    }
+
     /* ━━━━ FOOTER ━━━━ */
     .footer-bar {
       position: fixed; bottom: 0; left: 0; right: 0;
@@ -238,6 +257,9 @@
 </head>
 <body>
 <div id="app">
+  <!-- ━━━━ TOP BUTTON ━━━━ -->
+  <a class="top-btn" href="index.html">← TOP</a>
+
   <div class="drag-ghost" ref="ghostEl"><img ref="ghostImg" src="" alt="" draggable="false"></div>
 
   <!-- ━━━━ ADJUST MODAL ━━━━ -->
@@ -306,6 +328,7 @@
     <div v-if="mode==='split'" class="split-info-box">
       <strong>仕組み：</strong>縦長画像（1200×2025px）を投稿すると、Xが自動で中央の16:9部分をTLに表示。タップで縦長全体が見え、上下の隠しゾーンが現れます。<br>
       <span style="color:var(--success)">✓ Xの無料アカウントでも使えます</span>
+      <div class="tablet-warn">📱 タブレットの方は横向きでお使いください</div>
     </div>
 
     <!-- ★ 縦スクロールモード：仕組み説明 -->
@@ -313,6 +336,7 @@
       <strong>仕組み：</strong>4枚の画像（3:4）をXに投稿すると、TLでは2×2グリッド表示。タップすると縦4枚が順番に展開されます。<br>
       <span style="color:var(--warn)">⚠ X Premium（有料）が必要です</span><br>
       <span style="font-size:9px;opacity:.7">無料アカウントでは画像の並び順を変更できないため、縦一列に繋がった表示になりません。</span>
+      <div class="tablet-warn">📱 タブレットの方は横向きでお使いください</div>
     </div>
 
     <div v-if="imagePool.length">
@@ -1024,11 +1048,15 @@ createApp({
           const qTop  = g.splitInfo.yIdx * mainFH / 2
           const qW = mainFW / 2; const qH = mainFH / 2
           const scX = W / qW; const scY = ZONE_H / qH
-          ctx.save(); ctx.beginPath(); ctx.rect(0, ZONE_H, W, ZONE_H); ctx.clip()
+          // ★ 浮動小数点誤差による境界の隙間を防ぐため Math.round で整数化
+          const dx = Math.round((fullLeft - qLeft) * scX)
+          const dy = Math.round((fullTop  - qTop)  * scY)
+          const dw = Math.round(fullW * scX)
+          const dh = Math.round(fullH * scY)
+          // クリップ領域を1px広げて浮動小数点ズレによる隙間を確実に消す
+          ctx.save(); ctx.beginPath(); ctx.rect(0, ZONE_H - 1, W, ZONE_H + 2); ctx.clip()
           ctx.drawImage(img, 0, 0, img.naturalWidth, img.naturalHeight,
-            (fullLeft - qLeft) * scX,
-            ZONE_H + (fullTop - qTop) * scY,
-            fullW * scX, fullH * scY)
+            dx, ZONE_H + dy, dw, dh)
           ctx.restore()
         } else {
           // 通常main: FVゾーン全体に描画
