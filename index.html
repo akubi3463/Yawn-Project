@@ -1,0 +1,468 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>X Split Pro</title>
+<meta name="description" content="Xの4枚グリッド投稿を活用した隠し画像付き投稿を作成できるツール。無料アカウントで使えるギミック対応。">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --bg: #0a0a0f;
+  --surface: #111118;
+  --surface2: #1a1a24;
+  --border: #2a2a3a;
+  --accent: #5b8fff;
+  --accent2: #a78bfa;
+  --text: #e8e8f0;
+  --muted: #5a5a7a;
+  --muted2: #8888aa;
+  --success: #34d399;
+  --warn: #fbbf24;
+}
+
+html { scroll-behavior: smooth; }
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Syne', sans-serif;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* ── NOISE OVERLAY ── */
+body::before {
+  content: '';
+  position: fixed; inset: 0; z-index: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+  pointer-events: none;
+  opacity: .5;
+}
+
+/* ── AMBIENT BG ── */
+.bg-ambient {
+  position: fixed; inset: 0; z-index: 0; pointer-events: none;
+  background:
+    radial-gradient(ellipse 80% 60% at 20% -10%, rgba(91,143,255,.12) 0%, transparent 60%),
+    radial-gradient(ellipse 50% 50% at 85% 90%, rgba(167,139,250,.08) 0%, transparent 55%),
+    radial-gradient(ellipse 40% 40% at 50% 50%, rgba(52,211,153,.04) 0%, transparent 70%);
+}
+
+/* ── GRID TEXTURE ── */
+.bg-grid {
+  position: fixed; inset: 0; z-index: 0; pointer-events: none; opacity: .035;
+  background-image:
+    linear-gradient(var(--border) 1px, transparent 1px),
+    linear-gradient(90deg, var(--border) 1px, transparent 1px);
+  background-size: 48px 48px;
+}
+
+/* ── LAYOUT ── */
+.page {
+  position: relative; z-index: 1;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 48px 24px 80px;
+  gap: 0;
+}
+
+/* ── EYEBROW ── */
+.eyebrow {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 9px; font-weight: 600; letter-spacing: 5px;
+  color: var(--muted); text-transform: uppercase;
+  margin-bottom: 28px;
+  display: inline-flex; align-items: center; gap: 10px;
+  opacity: 0; animation: fadeUp .8s .1s ease forwards;
+}
+.eyebrow::before, .eyebrow::after {
+  content: ''; display: block; width: 28px; height: 1px;
+  background: currentColor; opacity: .5;
+}
+
+/* ── LOGO ── */
+.logo-wrap {
+  text-align: center; margin-bottom: 20px;
+  opacity: 0; animation: fadeUp .8s .2s ease forwards;
+}
+.logo-main {
+  font-size: clamp(52px, 12vw, 96px);
+  font-weight: 800; letter-spacing: -4px; line-height: .95;
+  background: linear-gradient(135deg, #ffffff 0%, rgba(255,255,255,.7) 100%);
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+.logo-main em {
+  font-style: normal;
+  background: linear-gradient(135deg, var(--accent) 0%, var(--accent2) 100%);
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+.logo-sub {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px; font-weight: 600; letter-spacing: 6px;
+  color: var(--muted); text-transform: uppercase; margin-top: 10px;
+}
+
+/* ── TAGLINE ── */
+.tagline {
+  font-size: clamp(13px, 2.5vw, 16px); color: var(--muted2);
+  text-align: center; max-width: 480px; line-height: 1.8;
+  margin-bottom: 48px;
+  opacity: 0; animation: fadeUp .8s .35s ease forwards;
+}
+.tagline strong { color: var(--text); font-weight: 700; }
+
+/* ── FEATURE BADGES ── */
+.badges {
+  display: flex; flex-wrap: wrap; gap: 8px; justify-content: center;
+  margin-bottom: 56px;
+  opacity: 0; animation: fadeUp .8s .45s ease forwards;
+}
+.fbadge {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 9px; font-weight: 600; letter-spacing: 2px;
+  padding: 5px 12px; border-radius: 50px;
+  border: 1px solid; text-transform: uppercase;
+  transition: transform .2s;
+}
+.fbadge:hover { transform: translateY(-1px); }
+.fb-blue   { background: rgba(91,143,255,.1);  color: var(--accent);  border-color: rgba(91,143,255,.3); }
+.fb-green  { background: rgba(52,211,153,.1);  color: var(--success); border-color: rgba(52,211,153,.3); }
+.fb-purple { background: rgba(167,139,250,.1); color: var(--accent2); border-color: rgba(167,139,250,.3); }
+.fb-warn   { background: rgba(251,191,36,.1);  color: var(--warn);    border-color: rgba(251,191,36,.3); }
+
+/* ── MAIN CARDS ── */
+.cards {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  width: 100%;
+  max-width: 720px;
+  margin-bottom: 48px;
+  opacity: 0; animation: fadeUp .8s .55s ease forwards;
+}
+@media (max-width: 560px) { .cards { grid-template-columns: 1fr; } }
+
+.nav-card {
+  position: relative;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 32px 28px;
+  text-decoration: none; color: inherit;
+  overflow: hidden;
+  transition: transform .25s cubic-bezier(.34,1.56,.64,1), border-color .2s, box-shadow .2s;
+  display: flex; flex-direction: column; gap: 16px;
+  cursor: pointer;
+}
+.nav-card::before {
+  content: ''; position: absolute; inset: 0;
+  border-radius: 20px; opacity: 0;
+  transition: opacity .25s;
+}
+.nav-card:hover { transform: translateY(-4px); }
+.nav-card:hover::before { opacity: 1; }
+
+/* ツール カード */
+.card-tool { border-color: rgba(91,143,255,.2); }
+.card-tool::before { background: radial-gradient(ellipse 80% 60% at 0% 0%, rgba(91,143,255,.08), transparent 70%); }
+.card-tool:hover { border-color: rgba(91,143,255,.5); box-shadow: 0 12px 40px rgba(91,143,255,.15), 0 0 0 1px rgba(91,143,255,.1); }
+
+/* ガイド カード */
+.card-guide { border-color: rgba(52,211,153,.15); }
+.card-guide::before { background: radial-gradient(ellipse 80% 60% at 0% 0%, rgba(52,211,153,.06), transparent 70%); }
+.card-guide:hover { border-color: rgba(52,211,153,.4); box-shadow: 0 12px 40px rgba(52,211,153,.1), 0 0 0 1px rgba(52,211,153,.08); }
+
+.card-top {
+  display: flex; align-items: flex-start; justify-content: space-between;
+  position: relative; z-index: 1;
+}
+.card-icon-wrap {
+  width: 48px; height: 48px; border-radius: 14px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 22px; flex-shrink: 0;
+}
+.card-tool .card-icon-wrap { background: rgba(91,143,255,.15); border: 1px solid rgba(91,143,255,.25); }
+.card-guide .card-icon-wrap { background: rgba(52,211,153,.12); border: 1px solid rgba(52,211,153,.2); }
+
+.card-arrow {
+  font-size: 20px; opacity: .3;
+  transition: opacity .2s, transform .2s;
+  margin-top: 4px;
+}
+.nav-card:hover .card-arrow { opacity: .8; transform: translate(3px, -3px); }
+.card-tool .card-arrow { color: var(--accent); }
+.card-guide .card-arrow { color: var(--success); }
+
+.card-body-text { position: relative; z-index: 1; }
+.card-label {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 9px; font-weight: 600; letter-spacing: 3px;
+  text-transform: uppercase; margin-bottom: 6px;
+}
+.card-tool .card-label { color: var(--accent); }
+.card-guide .card-label { color: var(--success); }
+
+.card-name {
+  font-size: 22px; font-weight: 800; letter-spacing: -.5px;
+  line-height: 1.1; margin-bottom: 10px;
+}
+.card-desc {
+  font-size: 12px; color: var(--muted2); line-height: 1.75;
+}
+.card-desc strong { color: var(--text); }
+
+.card-footer {
+  display: flex; align-items: center; gap: 8px;
+  position: relative; z-index: 1;
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
+}
+.cf-btn {
+  font-family: 'Syne', sans-serif;
+  font-size: 12px; font-weight: 700; letter-spacing: .5px;
+  padding: 9px 20px; border-radius: 50px; border: none;
+  cursor: pointer; pointer-events: none;
+  transition: box-shadow .2s;
+}
+.card-tool .cf-btn { background: linear-gradient(135deg, var(--accent), var(--accent2)); color: #fff; }
+.card-guide .cf-btn { background: linear-gradient(135deg, var(--success), #059669); color: #000; }
+.cf-url {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px; color: var(--muted); letter-spacing: .5px;
+}
+
+/* ── MINI PREVIEW ILLUS ── */
+.card-illus {
+  position: absolute; bottom: -8px; right: -8px;
+  opacity: .12; pointer-events: none;
+  transition: opacity .25s;
+}
+.nav-card:hover .card-illus { opacity: .2; }
+.illus-grid-mini {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 3px;
+  width: 80px; padding: 3px; background: #000;
+  border-radius: 8px; border: 1px solid #333;
+}
+.igm-cell {
+  aspect-ratio: 16/9; border-radius: 3px;
+}
+.igm1 { background: var(--accent); }
+.igm2 { background: var(--accent2); }
+.igm3 { background: var(--success); }
+.igm4 { background: var(--warn); }
+
+/* ── STATS ROW ── */
+.stats {
+  display: flex; gap: 0;
+  width: 100%; max-width: 720px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 14px; overflow: hidden;
+  margin-bottom: 40px;
+  opacity: 0; animation: fadeUp .8s .65s ease forwards;
+}
+.stat {
+  flex: 1; padding: 16px 20px;
+  text-align: center;
+  position: relative;
+}
+.stat + .stat { border-left: 1px solid var(--border); }
+.stat-val {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 20px; font-weight: 600;
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  background-clip: text;
+  display: block; margin-bottom: 4px;
+}
+.stat-label {
+  font-size: 10px; color: var(--muted); font-weight: 700;
+  letter-spacing: 1.5px; text-transform: uppercase;
+}
+
+/* ── FOOTER ── */
+.footer-bar {
+  position: fixed; bottom: 0; left: 0; right: 0;
+  height: 24px; display: flex; align-items: center; justify-content: center;
+  font-family: 'JetBrains Mono', monospace; font-size: 9px;
+  color: rgba(90,90,122,.45); letter-spacing: 2px;
+  background: rgba(10,10,15,.7); backdrop-filter: blur(8px);
+  border-top: 1px solid rgba(42,42,58,.4);
+  pointer-events: none; z-index: 100;
+}
+
+/* ── ANIMATIONS ── */
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ── SCAN LINE EFFECT on logo ── */
+.logo-main {
+  position: relative;
+}
+.scanline {
+  position: absolute; left: 0; right: 0; height: 2px;
+  background: linear-gradient(90deg, transparent, rgba(91,143,255,.4), transparent);
+  animation: scan 3s linear infinite;
+  pointer-events: none;
+  mix-blend-mode: screen;
+}
+@keyframes scan {
+  0%   { top: -4px; opacity: 0; }
+  5%   { opacity: 1; }
+  95%  { opacity: 1; }
+  100% { top: calc(100% + 4px); opacity: 0; }
+}
+
+/* ── HOVER GLOW on cards ── */
+.nav-card .glow {
+  position: absolute; border-radius: 50%;
+  pointer-events: none; z-index: 0;
+  filter: blur(40px); opacity: 0;
+  transition: opacity .4s;
+  width: 200px; height: 200px;
+  top: -60px; left: -60px;
+}
+.card-tool .glow { background: var(--accent); }
+.card-guide .glow { background: var(--success); }
+.nav-card:hover .glow { opacity: .06; }
+</style>
+</head>
+<body>
+
+<div class="bg-ambient"></div>
+<div class="bg-grid"></div>
+
+<div class="page">
+
+  <!-- eyebrow -->
+  <div class="eyebrow">akubi / tools</div>
+
+  <!-- LOGO -->
+  <div class="logo-wrap">
+    <div style="position:relative;display:inline-block;">
+      <div class="logo-main">X Split <em>Pro</em></div>
+      <div class="scanline"></div>
+    </div>
+    <div class="logo-sub">X grid image toolkit</div>
+  </div>
+
+  <!-- TAGLINE -->
+  <p class="tagline">
+    Xの4枚グリッド投稿で使える<strong>「隠し画像」ギミック</strong>を、<br>
+    ブラウザだけで簡単に作成できるツールです。
+  </p>
+
+  <!-- BADGES -->
+  <div class="badges">
+    <span class="fbadge fb-green">✓ 無料アカウント対応</span>
+    <span class="fbadge fb-blue">ブラウザのみ</span>
+    <span class="fbadge fb-purple">サーバー不要</span>
+    <span class="fbadge fb-warn">ZIP書き出し</span>
+  </div>
+
+  <!-- MAIN CARDS -->
+  <div class="cards">
+
+    <!-- ツール -->
+    <a class="nav-card card-tool" href="xsplit.html">
+      <div class="glow"></div>
+      <div class="card-top">
+        <div class="card-icon-wrap">✂️</div>
+        <div class="card-arrow">↗</div>
+      </div>
+      <div class="card-body-text">
+        <div class="card-label">App</div>
+        <div class="card-name">X Split<br>ツールを使う</div>
+        <div class="card-desc">
+          画像をドロップして、隠しゾーンを設定し、<strong>ZIP書き出し</strong>するだけ。PC・スマホ両対応。
+        </div>
+      </div>
+      <div class="card-footer">
+        <div class="cf-btn">Open Tool →</div>
+        <div class="cf-url">xsplit.html</div>
+      </div>
+      <div class="card-illus">
+        <div class="illus-grid-mini">
+          <div class="igm-cell igm1"></div>
+          <div class="igm-cell igm2"></div>
+          <div class="igm-cell igm3"></div>
+          <div class="igm-cell igm4"></div>
+        </div>
+      </div>
+    </a>
+
+    <!-- ガイド -->
+    <a class="nav-card card-guide" href="readme.html">
+      <div class="glow"></div>
+      <div class="card-top">
+        <div class="card-icon-wrap">📖</div>
+        <div class="card-arrow">↗</div>
+      </div>
+      <div class="card-body-text">
+        <div class="card-label">Guide</div>
+        <div class="card-name">はじめての<br>ガイドを読む</div>
+        <div class="card-desc">
+          仕組みの解説から全手順まで。<strong>初心者でも迷わない</strong>図解つきガイド。
+        </div>
+      </div>
+      <div class="card-footer">
+        <div class="cf-btn">Read Guide →</div>
+        <div class="cf-url">readme.html</div>
+      </div>
+    </a>
+
+  </div>
+
+  <!-- STATS -->
+  <div class="stats">
+    <div class="stat">
+      <span class="stat-val">1200<span style="font-size:12px;opacity:.6;">×</span>2025</span>
+      <span class="stat-label">出力サイズ (px)</span>
+    </div>
+    <div class="stat">
+      <span class="stat-val">×3</span>
+      <span class="stat-label">ゾーン構成 (16:9)</span>
+    </div>
+    <div class="stat">
+      <span class="stat-val">0</span>
+      <span class="stat-label">サーバー通信</span>
+    </div>
+    <div class="stat" style="display:none;" id="stat-wide">
+      <span class="stat-val">Free</span>
+      <span class="stat-label">分割モード</span>
+    </div>
+  </div>
+
+</div>
+
+<div class="footer-bar">created by akubi</div>
+
+<script>
+// スマホで4列表示
+if (window.innerWidth >= 600) {
+  document.getElementById('stat-wide').style.display = '';
+}
+// カードホバー: マウスポジション追従グロー
+document.querySelectorAll('.nav-card').forEach(card => {
+  card.addEventListener('mousemove', e => {
+    const rect = card.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    const glow = card.querySelector('.glow');
+    if (glow) {
+      glow.style.left = (x - 100) + 'px';
+      glow.style.top  = (y - 100) + 'px';
+    }
+  });
+});
+</script>
+</body>
+</html>
