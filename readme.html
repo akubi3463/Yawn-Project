@@ -192,9 +192,23 @@ body {
 .tz-bot { background: rgba(20,20,32,.8); color: var(--muted); }
 
 .footer { text-align: center; padding: 48px 24px; border-top: 1px solid var(--border); font-size: 11px; color: var(--muted); font-family: 'JetBrains Mono', monospace; }
+
+/* ── TOP BUTTON ── */
+.top-btn {
+  position: fixed; top: 14px; left: 16px; z-index: 200;
+  font-family: 'JetBrains Mono', monospace; font-size: 9px; font-weight: 600;
+  letter-spacing: 2px; text-transform: uppercase; text-decoration: none;
+  color: var(--muted); background: rgba(17,17,24,.88); backdrop-filter: blur(8px);
+  border: 1px solid rgba(42,42,58,.7); border-radius: 8px;
+  padding: 6px 12px; display: inline-flex; align-items: center; gap: 6px;
+  transition: color .2s, border-color .2s;
+}
+.top-btn:hover { color: var(--accent); border-color: rgba(91,143,255,.4); }
 </style>
 </head>
 <body>
+
+<a class="top-btn" href="index.html">← TOP</a>
 
 <div class="hero">
   <div class="hero-bg"></div>
@@ -264,7 +278,7 @@ body {
   <div class="card">
     <div class="card-header"><span class="card-icon">✨</span><span class="card-title-text">X Split Pro でできること</span></div>
     <div class="card-body">
-      <strong>① 1枚を分割モード：</strong>大きな1枚の画像を4分割し、各セルを縦長の1ファイル（1200×2025px）として書き出します。Xに投稿するとタイムラインでは中央の16:9部分が自動表示され、タップすると上下の隠しゾーンが見えます。<strong style="color:var(--success);">Xの無料アカウントでも使えます。</strong><br><br>
+      <strong>① 1枚を分割モード：</strong>大きな1枚の画像を4分割し、各セルを縦長の1ファイル（1200×2025px）として書き出します。Xに投稿するとタイムラインでは中央の16:9部分が自動表示され、タップすると上下の隠しゾーンが見えます。<strong style="color:var(--success);">無料アカウントで使えます。</strong><br><br>
       <strong>② 縦スクロールモード：</strong>4枚の別々の画像を3:4サイズで書き出し、タップすると縦4枚に展開されるグリッドを作れます。<strong style="color:var(--warn);">X Premium（有料）が必要です。</strong>
     </div>
   </div>
@@ -739,4 +753,3 @@ body {
 
 </body>
 </html>
-
