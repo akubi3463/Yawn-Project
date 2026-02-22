@@ -15,14 +15,25 @@
       --text: #e8e8f0; --muted: #5a5a7a;
       --success: #34d399; --danger: #f87171; --warn: #fbbf24;
     }
-    html, body { height: 100%; touch-action: none; }
+
+    /* ★ 修正1: html,body から height:100% と touch-action:none を削除
+       PC用はメディアクエリで別途指定 */
+    html, body { min-height: 100%; }
+
     body {
       background: var(--bg); color: var(--text);
       font-family: 'Syne', sans-serif;
       -webkit-tap-highlight-color: transparent;
       user-select: none; -webkit-user-select: none;
-      overscroll-behavior: none;
+      /* ★ 修正2: overscroll-behavior:none を削除（スマホスクロール阻害） */
+      /* ★ 修正3: touch-action:none を削除（スマホタッチスクロール阻害） */
     }
+
+    /* ★ PC(>=900px)のみ height:100% で固定レイアウトにする */
+    @media (min-width: 900px) {
+      html, body { height: 100%; overflow: hidden; }
+    }
+
     .mono { font-family: 'JetBrains Mono', monospace; }
     #app { display: flex; flex-direction: column; min-height: 100dvh; }
     @media (min-width: 900px) { #app { flex-direction: row; height: 100svh; overflow: hidden; } }
@@ -47,7 +58,6 @@
     .dropzone-icon { font-size: 24px; margin-bottom: 6px; }
     .dropzone-text { font-size: 11px; color: var(--muted); line-height: 1.5; }
 
-    /* split mode: gap UI 削除済み、仕組み説明のみ */
     .split-info-box {
       background: rgba(91,143,255,.06); border: 1px solid rgba(91,143,255,.2);
       border-radius: 10px; padding: 12px 14px; font-size: 10px; color: var(--muted); line-height: 1.7;
@@ -56,6 +66,7 @@
 
     .pool-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
     @media (min-width: 900px) { .pool-grid { grid-template-columns: repeat(3, 1fr); } }
+    /* ★ pool-item: ドラッグ操作が必要なのでここだけ touch-action:none */
     .pool-item { aspect-ratio: 1; border-radius: 8px; overflow: hidden; border: 2px solid transparent; transition: border-color .15s; position: relative; cursor: grab; touch-action: none; }
     .pool-item img { width: 100%; height: 100%; object-fit: cover; pointer-events: none; }
     .pool-del { position: absolute; top: 3px; right: 3px; width: 22px; height: 22px; background: rgba(0,0,0,.8); color: var(--danger); border: none; border-radius: 50%; font-size: 11px; cursor: pointer; display: flex; align-items: center; justify-content: center; z-index: 2; }
@@ -76,9 +87,13 @@
       background-size: 100% 100%, 16px 16px, 16px 16px, 16px 16px, 16px 16px;
       background-position: 0 0, 0 0, 0 8px, 8px -8px, -8px 0;
       display: flex; align-items: center; justify-content: center;
-      padding: 20px 16px; position: relative; touch-action: none;
+      padding: 20px 16px; position: relative;
+      /* スマホではtouch-action:noneを外す（ページスクロール優先）
+         ドラッグ中はJS側でpreventDefaultするので問題なし */
     }
-    @media (min-width: 900px) { .preview-area { flex: 1; overflow: hidden; } }
+    @media (min-width: 900px) {
+      .preview-area { flex: 1; overflow: hidden; touch-action: none; }
+    }
     .preview-label {
       position: absolute; top: 10px; left: 14px;
       font-size: 9px; font-weight: 700; letter-spacing: 3px; color: var(--muted); text-transform: uppercase;
@@ -88,7 +103,9 @@
     .adjust-modal-bg {
       position: fixed; inset: 0; background: rgba(0,0,0,.85);
       display: flex; flex-direction: column; align-items: center; justify-content: center;
-      z-index: 1000; touch-action: none;
+      z-index: 1000;
+      /* ★ モーダル表示中はページスクロール不要なので touch-action:none 維持 */
+      touch-action: none;
     }
     .adjust-modal-title { font-size: 11px; font-weight: 700; letter-spacing: 3px; text-transform: uppercase; color: var(--muted); margin-bottom: 10px; }
     .adjust-modal-title em { color: var(--success); font-style: normal; }
@@ -96,13 +113,11 @@
     .adjust-frame-wrap img { position: absolute; pointer-events: none; transform-origin: 0 0; }
     .adjust-frame-guide { position: absolute; inset: 0; pointer-events: none; z-index: 5; }
 
-    /* 4分割全体プレビュー用ガイド（2×2グリッド線） */
     .guide-grid-split { position: absolute; inset: 0; }
     .guide-grid-split::before { content:''; position:absolute; left:50%; top:0; bottom:0; width:2px; background:rgba(91,143,255,.5); transform:translateX(-50%); }
     .guide-grid-split::after { content:''; position:absolute; top:50%; left:0; right:0; height:2px; background:rgba(91,143,255,.5); transform:translateY(-50%); }
     .guide-grid-split-border { position:absolute; inset:0; border:2px solid rgba(91,143,255,.6); }
 
-    /* 単ゾーン (main/top/bottom) 用ガイド */
     .guide-zone { position: absolute; inset: 0; border: 2px solid rgba(52,211,153,.7); }
     .guide-zone-main { position: absolute; inset: 0; border: 2px solid rgba(91,143,255,.7); }
 
@@ -120,7 +135,6 @@
     .grid-preview-lbl { font-size: 9px; color: var(--muted); letter-spacing: 2px; font-weight: 700; text-transform: uppercase; }
     .x-frame { background: #000; border-radius: 14px; padding: 3px; border: 1px solid #333; box-shadow: 0 0 40px rgba(0,0,0,.8); overflow: hidden; }
     .x-grid-4 { display: grid; grid-template-columns: 1fr 1fr; gap: 2px; width: min(320px, calc(100vw - 48px)); border-radius: 12px; overflow: hidden; }
-    /* ★ TLセルは16:9 */
     .x-grid-cell { aspect-ratio: 16/9; position: relative; background: var(--surface2); overflow: hidden; cursor: pointer; touch-action: manipulation; }
     .x-grid-cell.drag-over { outline: 3px solid var(--warn); outline-offset: -3px; }
     .x-grid-cell img { position: absolute; pointer-events: none; }
@@ -129,15 +143,13 @@
     .cell-ph .lbl { font-size:7px; color:var(--muted); font-weight:700; letter-spacing:2px; text-transform:uppercase; }
 
     /* ━━━━ SCROLL VIEW (split mode detail) ━━━━ */
-    /* ★ 縦長プレビュー：3ゾーンすべて16:9 */
     .scroll-preview { display: flex; flex-direction: column; align-items: center; gap: 8px; }
     .scroll-preview-lbl { font-size: 9px; color: var(--muted); letter-spacing: 2px; font-weight: 700; text-transform: uppercase; }
     .x-scroll-frame { background: #000; border-radius: 14px; border: 1px solid #333; box-shadow: 0 0 40px rgba(0,0,0,.8); overflow: hidden; width: min(260px, calc(100vw - 48px)); }
-    /* ★ 各ゾーンは16:9 */
     .scroll-zone { position: relative; width: 100%; aspect-ratio: 16/9; overflow: hidden; }
     .scroll-zone + .scroll-zone { border-top: 2px solid #222; }
     .scroll-zone img { position: absolute; pointer-events: none; }
-    .zone-ph { width:100%; height:100%; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:4px; background:var(--surface2); touch-action:none; }
+    .zone-ph { width:100%; height:100%; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:4px; background:var(--surface2); }
     .zone-ph span { font-size:9px; color:var(--muted); font-weight:700; letter-spacing:1px; text-transform:uppercase; }
     .scroll-zone.is-main { outline: 2px solid rgba(91,143,255,.7); outline-offset: -2px; }
     .scroll-zone.is-hidden::after { content:''; position:absolute; inset:0; background:rgba(0,0,0,.45); z-index:2; pointer-events:none; }
@@ -278,14 +290,11 @@
       @wheel.prevent="onAdjustWheel">
       <img :src="adjustModal.src" :style="adjustImgStyle" ref="adjustImgEl" draggable="false">
       <div class="adjust-frame-guide">
-        <!-- split全体プレビュー：2×2グリッド線 -->
         <template v-if="adjustModal.type==='split'">
           <div class="guide-grid-split"></div>
           <div class="guide-grid-split-border"></div>
         </template>
-        <!-- main (FV): 青枠 -->
         <div v-else-if="adjustModal.type==='main'" class="guide-zone-main"></div>
-        <!-- top/bottom (隠しゾーン): 緑枠 -->
         <div v-else class="guide-zone"></div>
       </div>
     </div>
@@ -324,14 +333,12 @@
       </div>
     </label>
 
-    <!-- ★ 分割モード：Gap廃止・仕組み説明 -->
     <div v-if="mode==='split'" class="split-info-box">
       <strong>仕組み：</strong>縦長画像（1200×2025px）を投稿すると、Xが自動で中央の16:9部分をTLに表示。タップで縦長全体が見え、上下の隠しゾーンが現れます。<br>
       <span style="color:var(--success)">✓ Xの無料アカウントでも使えます</span>
       <div class="tablet-warn">タブレットの方は横向きでお使いください</div>
     </div>
 
-    <!-- ★ 縦スクロールモード：仕組み説明 -->
     <div v-if="mode==='vscroll'" class="vscroll-info-box">
       <strong>仕組み：</strong>4枚の画像（3:4）をXに投稿すると、TLでは2×2グリッド表示。タップすると縦4枚が順番に展開されます。<br>
       <span style="color:var(--warn)">⚠ X Premium（有料）が必要です</span><br>
@@ -357,9 +364,7 @@
     <div class="preview-area">
       <div class="preview-label">Timeline Preview</div>
 
-      <!-- ━━━ 1枚を分割モード ━━━ -->
       <template v-if="mode==='split'">
-        <!-- グリッドビュー -->
         <div v-if="selectedGrid===null" class="grid-preview">
           <div class="grid-preview-lbl">X Timeline — 4枚投稿（TL表示）</div>
           <div class="x-frame">
@@ -368,7 +373,6 @@
                 :class="{'drag-over': dragOverTarget==='cell-'+(n-1)}"
                 :data-drop="'cell-'+(n-1)"
                 @click="selectedGrid=n-1">
-                <!-- ★ TLには各スロットのmain(FV)部分のみ表示 -->
                 <img v-if="grids[n-1].main" :src="grids[n-1].main" :style="getCellImgStyle(n-1)">
                 <div class="cell-ph" v-else><span class="num">{{ n }}</span><span class="lbl">TAP</span></div>
               </div>
@@ -380,11 +384,9 @@
           </div>
         </div>
 
-        <!-- スクロール詳細ビュー：3ゾーン（上隠し・TL表示・下隠し）各16:9 -->
         <div v-else class="scroll-preview">
           <div class="scroll-preview-lbl">タップ後のスクロールビュー（スロット {{ selectedGrid+1 }}）</div>
           <div class="x-scroll-frame">
-            <!-- 上隠しゾーン -->
             <div class="scroll-zone is-hidden" :class="{'drag-over': dragOverTarget==='layer-top'}">
               <template v-if="grids[selectedGrid].top">
                 <img :src="grids[selectedGrid].top" :style="getZoneImgStyle(selectedGrid,'top')" :data-drop="'layer-top'">
@@ -401,7 +403,6 @@
               </div>
             </div>
 
-            <!-- TL表示部（FV） -->
             <div class="scroll-zone is-main">
               <template v-if="grids[selectedGrid].main">
                 <img :src="grids[selectedGrid].main" :style="getMainZoneImgStyle(selectedGrid)">
@@ -419,7 +420,6 @@
               </div>
             </div>
 
-            <!-- 下隠しゾーン -->
             <div class="scroll-zone is-hidden" :class="{'drag-over': dragOverTarget==='layer-bottom'}">
               <template v-if="grids[selectedGrid].bottom">
                 <img :src="grids[selectedGrid].bottom" :style="getZoneImgStyle(selectedGrid,'bottom')" :data-drop="'layer-bottom'">
@@ -440,7 +440,6 @@
         </div>
       </template>
 
-      <!-- ━━━ 縦スクロールモード ━━━ -->
       <template v-else>
         <div class="grid-preview">
           <div class="grid-preview-lbl">X Timeline — タップで縦4枚展開</div>
@@ -489,7 +488,6 @@
     <!-- ━━━━ EDITOR PANEL ━━━━ -->
     <div class="editor-panel">
 
-      <!-- split mode -->
       <template v-if="mode==='split'">
         <div class="editor-content">
           <div class="slot-tabs">
@@ -523,7 +521,6 @@
         </div>
       </template>
 
-      <!-- vscroll mode editor -->
       <template v-else>
         <div class="editor-content">
           <div class="slot-tabs">
@@ -562,7 +559,6 @@
     {{ toast.message }}
   </div>
 
-  <!-- ━━━━ FOOTER ━━━━ -->
   <div class="footer-bar">created by akubi</div>
 </div>
 
@@ -582,27 +578,17 @@ function defaultVSlot() {
   return { src: null, imgW: 0, imgH: 0, offsetX: 0, offsetY: 0, scale: 1, fw: 0, fh: 0, confirmed: false }
 }
 
-// ★ フレームサイズ定数
-// split全体プレビュー: 2×2の4分割全体を見せるフレーム
-// 4セル分なので 16:9 × 2列 / 2行 = 全体は16:9の2倍横 = 32:9 ≈ 横長
-// でもadjustModalでは「1枚の全体画像をどう使うか」を決めるので
-// フレームは 2×2 = 16:9 × 2列 × 2行 = 32:18 → 16:9の2×拡張
-// 実際はsplitFrame = mainZoneの2倍の解像度感で見せる
-// → adjustFrameにはFV(16:9)を4個並べた形 = 32:18 ≈ 16:9 の横2倍 = 横広フレーム
-const FRAME_SPLIT_W = 320  // 4分割全体調整用 (16:9 × 2列 = 32:9相当)
-const FRAME_SPLIT_H = 180  // = 320 * 9/16 * 1 → 実際は横2:縦1 の 2:1 に近い
+const FRAME_SPLIT_W = 320
+const FRAME_SPLIT_H = 180
 
-// ★ 各ゾーン (main FV, top, bottom) のプレビューフレーム: 16:9
 const FRAME_ZONE_W = 320
-const FRAME_ZONE_H = 180  // 320 * 9/16 = 180
+const FRAME_ZONE_H = 180
 
-// vscroll
-const VFRAME_W = 280, VFRAME_H = 158  // 16:9
+const VFRAME_W = 280, VFRAME_H = 158
 
-// ★ 出力サイズ (1枚を分割モード)
 const OUT_W = 1200
-const OUT_ZONE_H = 675  // 各ゾーン高さ = 1200 * 9/16 = 675 (16:9)
-const OUT_H = OUT_ZONE_H * 3  // = 2025
+const OUT_ZONE_H = 675
+const OUT_H = OUT_ZONE_H * 3
 
 createApp({
   setup() {
@@ -627,7 +613,6 @@ createApp({
 
     function switchMode(m) { mode.value = m; selectedGrid.value = null }
 
-    // ── adjust modal ──
     const adjustModal = ref({
       open: false, src: null, type: null, cellIdx: null, label: '',
       offsetX: 0, offsetY: 0, scale: 1, imgW: 0, imgH: 0,
@@ -636,16 +621,13 @@ createApp({
 
     const adjustFrameStyle = computed(() => {
       const m = adjustModal.value
-      // split全体プレビュー: 32:9（横広フレーム）
-      // zone (main/top/bottom): 16:9
-      // vslot: 16:9
       let baseW, baseH
       if (m.type === 'split') {
-        baseW = FRAME_SPLIT_W; baseH = FRAME_SPLIT_H  // ≈ 16:9
+        baseW = FRAME_SPLIT_W; baseH = FRAME_SPLIT_H
       } else if (m.isVSlot) {
         baseW = VFRAME_W; baseH = VFRAME_H
       } else {
-        baseW = FRAME_ZONE_W; baseH = FRAME_ZONE_H  // 16:9
+        baseW = FRAME_ZONE_W; baseH = FRAME_ZONE_H
       }
       const fw = Math.min(baseW, window.innerWidth - 40)
       const fh = Math.round(fw * (baseH / baseW))
@@ -710,7 +692,6 @@ createApp({
         const g = grids.value[m.cellIdx]
         if (m.type === 'split' || m.type === 'main') {
           g.mainT = t; g.mainConfirmed = true
-          // split調整は全4セルに同じtransformを適用（同一画像なので）
           if (m.type === 'split') {
             for (let i=0; i<4; i++) { grids.value[i].mainT={...t}; grids.value[i].mainConfirmed=true }
           }
@@ -766,18 +747,11 @@ createApp({
     }
     function onAdjustWheel(e) { adjustModal.value.scale = Math.max(0.1, Math.min(10, adjustModal.value.scale + (e.deltaY > 0 ? -0.05 : 0.05))) }
 
-    // ────────────────────────────────────────────────────────
-    // ★ プレビューstyle計算
-    // TLグリッドセル: 各セルに対応するFV部分（主画像の16:9中央）を表示
-    // splitInfoがある場合 = 4分割使用 → 全体画像の1/4をセルに表示
-    // ────────────────────────────────────────────────────────
-
-    // TL 2×2グリッドセルのプレビューstyle
     function getCellImgStyle(idx) {
       const g = grids.value[idx]; const info = g.splitInfo; const t = g.mainT
       const gridW = Math.min(320, window.innerWidth - 48)
-      const fw = gridW / 2       // セル幅
-      const fh = fw * 9 / 16    // セル高さ（16:9）
+      const fw = gridW / 2
+      const fh = fw * 9 / 16
 
       if (!g.mainImgW || !g.mainImgH) return { width:'100%', height:'100%', objectFit:'cover' }
 
@@ -791,7 +765,6 @@ createApp({
       const fullTop  = (mfh - fullH)  / 2 + t.offsetY
 
       if (info) {
-        // 4分割: info.xIdx, info.yIdx で1/4を切り出す
         const qLeft = info.xIdx * mfw / 2
         const qTop  = info.yIdx * mfh / 2
         const scX = fw / (mfw / 2)
@@ -803,7 +776,6 @@ createApp({
           height: fullH * scY + 'px',
         }
       } else {
-        // 通常: FVゾーン(16:9)として表示
         const fitSc = Math.max(fw / g.mainImgW, fh / g.mainImgH)
         const scX = fw / mfw; const scY = fh / mfh
         return {
@@ -815,11 +787,10 @@ createApp({
       }
     }
 
-    // ★ スクロールビュー: 上下隠しゾーンのプレビューstyle (16:9)
     function getZoneImgStyle(cellIdx, zoneType) {
       const g = grids.value[cellIdx]; const t = g[zoneType+'T']
       const fw = Math.min(260, window.innerWidth - 48)
-      const fh = fw * 9 / 16  // ★ 16:9
+      const fh = fw * 9 / 16
       const imgW = g[zoneType+'ImgW'] || 0; const imgH = g[zoneType+'ImgH'] || 0
       if (!imgW || !imgH) return { width:'100%', height:'100%', objectFit:'cover' }
       const mfw = t.fw || FRAME_ZONE_W; const mfh = t.fh || FRAME_ZONE_H
@@ -834,11 +805,10 @@ createApp({
       }
     }
 
-    // ★ スクロールビュー: TL表示部(FV)のプレビューstyle (16:9)
     function getMainZoneImgStyle(cellIdx) {
       const g = grids.value[cellIdx]; const info = g.splitInfo; const t = g.mainT
       const fw = Math.min(260, window.innerWidth - 48)
-      const fh = fw * 9 / 16  // ★ 16:9
+      const fh = fw * 9 / 16
       if (!g.mainImgW || !g.mainImgH) return { width:'100%', height:'100%', objectFit:'cover' }
       const mfw = t.fw || FRAME_SPLIT_W; const mfh = t.fh || FRAME_SPLIT_H
       const fitScale = Math.max(mfw / g.mainImgW, mfh / g.mainImgH)
@@ -865,7 +835,6 @@ createApp({
       }
     }
 
-    // vscroll
     function calcVImgStyle(s, fw, fh) {
       const mfw = s.fw || VFRAME_W; const mfh = s.fh || VFRAME_H
       const fitScale = Math.max(mfw / s.imgW, mfh / s.imgH)
@@ -906,7 +875,6 @@ createApp({
       img.src = src
     }
 
-    // ── helpers ──
     function showToast(msg, type='success') { toast.value={show:true,message:msg,type}; setTimeout(()=>toast.value.show=false,3000) }
     function readFile(f) { return new Promise(r=>{ const fr=new FileReader(); fr.onload=e=>r(e.target.result); fr.readAsDataURL(f) }) }
     async function handleUpload(e) { for (const f of Array.from(e.target.files||[])) imagePool.value.push(await readFile(f)); e.target.value='' }
@@ -917,7 +885,6 @@ createApp({
     }
     function clearVSlot(idx) { vSlots.value[idx]=defaultVSlot() }
 
-    // ★ 4分割モード: 1枚の画像を4セルに自動配置（splitInfo付き）
     function applyAutoSplit(src) {
       for (let i=0; i<4; i++) {
         const g=grids.value[i]; g.main=src; g.mainT=defaultTransform(); g.mainConfirmed=false
@@ -990,12 +957,10 @@ createApp({
       imagePool.value=[]; selectedGrid.value=null; adjustModal.value.open=false
     }
 
-    // ── export ──
     function loadImg(src) {
       return new Promise((res,rej)=>{ const i=new Image(); i.onload=()=>res(i); i.onerror=rej; i.src=src })
     }
 
-    // ★ ゾーン描画関数 (16:9ゾーン: W=1200, H=675)
     async function drawZoneRect(ctx, src, x, y, W, H, transform, frameW, frameH) {
       if (!src) { ctx.fillStyle='#111'; ctx.fillRect(x,y,W,H); return }
       const img = await loadImg(src)
@@ -1011,27 +976,20 @@ createApp({
       ctx.restore()
     }
 
-    // ★ 1枚を分割モード: 各スロットを 1200×2025px で書き出し
-    // 上隠しゾーン  : y=0,          H=675 (16:9)
-    // TL表示部(FV)  : y=675,        H=675 (16:9) ← Xがここを16:9でトリム表示
-    // 下隠しゾーン  : y=1350,       H=675 (16:9)
-    // 合計         : 1200×2025px
     async function buildSplitCanvas(slotIdx, canvas) {
-      const W = OUT_W             // 1200
-      const ZONE_H = OUT_ZONE_H   // 675
-      const H = OUT_H             // 2025
+      const W = OUT_W
+      const ZONE_H = OUT_ZONE_H
+      const H = OUT_H
       const ctx = canvas.getContext('2d', {willReadFrequently:true})
       canvas.width = W; canvas.height = H
       ctx.fillStyle = '#111'; ctx.fillRect(0, 0, W, H)
 
       const g = grids.value[slotIdx]
 
-      // ─ 上隠しゾーン (y=0 〜 675) ─
       const topFW = g.topT.fw || FRAME_ZONE_W
       const topFH = g.topT.fh || FRAME_ZONE_H
       await drawZoneRect(ctx, g.top, 0, 0, W, ZONE_H, g.topT, topFW, topFH)
 
-      // ─ TL表示部 FV (y=675 〜 1350) ─
       const mainFW = g.mainT.fw || FRAME_SPLIT_W
       const mainFH = g.mainT.fh || FRAME_SPLIT_H
       if (g.main) {
@@ -1043,30 +1001,25 @@ createApp({
         const fullLeft = (mainFW - fullW) / 2 + t.offsetX; const fullTop = (mainFH - fullH) / 2 + t.offsetY
 
         if (g.splitInfo) {
-          // 4分割: 画像全体の1/4を ZONE_H に収める
           const qLeft = g.splitInfo.xIdx * mainFW / 2
           const qTop  = g.splitInfo.yIdx * mainFH / 2
           const qW = mainFW / 2; const qH = mainFH / 2
           const scX = W / qW; const scY = ZONE_H / qH
-          // ★ 浮動小数点誤差による境界の隙間を防ぐため Math.round で整数化
           const dx = Math.round((fullLeft - qLeft) * scX)
           const dy = Math.round((fullTop  - qTop)  * scY)
           const dw = Math.round(fullW * scX)
           const dh = Math.round(fullH * scY)
-          // クリップ領域を1px広げて浮動小数点ズレによる隙間を確実に消す
           ctx.save(); ctx.beginPath(); ctx.rect(0, ZONE_H - 1, W, ZONE_H + 2); ctx.clip()
           ctx.drawImage(img, 0, 0, img.naturalWidth, img.naturalHeight,
             dx, ZONE_H + dy, dw, dh)
           ctx.restore()
         } else {
-          // 通常main: FVゾーン全体に描画
           await drawZoneRect(ctx, g.main, 0, ZONE_H, W, ZONE_H, g.mainT, mainFW, mainFH)
         }
       } else {
         ctx.fillStyle = '#1a1a24'; ctx.fillRect(0, ZONE_H, W, ZONE_H)
       }
 
-      // ─ 下隠しゾーン (y=1350 〜 2025) ─
       const botFW = g.bottomT.fw || FRAME_ZONE_W
       const botFH = g.bottomT.fh || FRAME_ZONE_H
       await drawZoneRect(ctx, g.bottom, 0, ZONE_H * 2, W, ZONE_H, g.bottomT, botFW, botFH)
@@ -1196,5 +1149,3 @@ createApp({
 </script>
 </body>
 </html>
-
-
