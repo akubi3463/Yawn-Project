@@ -1,0 +1,1149 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>X Split Pro</title>
+  <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg: #0a0a0f; --surface: #111118; --surface2: #1a1a24;
+      --border: #2a2a3a; --accent: #5b8fff; --accent2: #a78bfa;
+      --text: #e8e8f0; --muted: #5a5a7a;
+      --success: #34d399; --danger: #f87171; --warn: #fbbf24;
+    }
+
+    /* ★ 修正1: html,body から height:100% と touch-action:none を削除
+       PC用はメディアクエリで別途指定 */
+    html, body { min-height: 100%; }
+
+    body {
+      background: var(--bg); color: var(--text);
+      font-family: 'Syne', sans-serif;
+      -webkit-tap-highlight-color: transparent;
+      user-select: none; -webkit-user-select: none;
+      /* ★ 修正2: overscroll-behavior:none を削除（スマホスクロール阻害） */
+      /* ★ 修正3: touch-action:none を削除（スマホタッチスクロール阻害） */
+    }
+
+    /* ★ PC(>=900px)のみ height:100% で固定レイアウトにする */
+    @media (min-width: 900px) {
+      html, body { height: 100%; overflow: hidden; }
+    }
+
+    .mono { font-family: 'JetBrains Mono', monospace; }
+    #app { display: flex; flex-direction: column; min-height: 100dvh; }
+    @media (min-width: 900px) { #app { flex-direction: row; height: 100svh; overflow: hidden; } }
+
+    /* ━━━━ SIDEBAR ━━━━ */
+    .sidebar {
+      background: var(--surface); border-bottom: 1px solid var(--border);
+      padding: 18px 16px; display: flex; flex-direction: column; gap: 16px;
+    }
+    @media (min-width: 900px) {
+      .sidebar { width: 270px; flex-shrink: 0; height: 100%; overflow-y: auto; border-bottom: none; border-right: 1px solid var(--border); }
+    }
+    .logo { font-size: 20px; font-weight: 800; letter-spacing: -.5px; }
+    .logo em { color: var(--accent); font-style: normal; }
+    .badge { display: inline-block; font-size: 8px; font-weight: 700; letter-spacing: 2px; background: rgba(91,143,255,.12); color: var(--accent); padding: 3px 8px; border-radius: 4px; border: 1px solid rgba(91,143,255,.3); margin-top: 4px; }
+    .slabel { font-size: 9px; font-weight: 700; letter-spacing: 3px; color: var(--muted); text-transform: uppercase; margin-bottom: 8px; }
+    .mode-toggle { display: grid; grid-template-columns: 1fr 1fr; background: var(--bg); border-radius: 10px; padding: 3px; border: 1px solid var(--border); }
+    .mode-btn { padding: 10px; border-radius: 8px; border: none; cursor: pointer; font-family: 'Syne',sans-serif; font-size: 12px; font-weight: 700; transition: all .2s; background: transparent; color: var(--muted); }
+    .mode-btn.active { background: var(--accent); color: #fff; }
+    .dropzone { border: 2px dashed var(--border); border-radius: 12px; padding: 22px 16px; text-align: center; cursor: pointer; transition: all .2s; background: rgba(91,143,255,.02); display: block; }
+    .dropzone:active, .dropzone.over { border-color: var(--accent); background: rgba(91,143,255,.08); }
+    .dropzone-icon { font-size: 24px; margin-bottom: 6px; }
+    .dropzone-text { font-size: 11px; color: var(--muted); line-height: 1.5; }
+
+    .split-info-box {
+      background: rgba(91,143,255,.06); border: 1px solid rgba(91,143,255,.2);
+      border-radius: 10px; padding: 12px 14px; font-size: 10px; color: var(--muted); line-height: 1.7;
+    }
+    .split-info-box strong { color: var(--accent); }
+
+    .pool-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
+    @media (min-width: 900px) { .pool-grid { grid-template-columns: repeat(3, 1fr); } }
+    /* ★ pool-item: ドラッグ操作が必要なのでここだけ touch-action:none */
+    .pool-item { aspect-ratio: 1; border-radius: 8px; overflow: hidden; border: 2px solid transparent; transition: border-color .15s; position: relative; cursor: grab; touch-action: none; }
+    .pool-item img { width: 100%; height: 100%; object-fit: cover; pointer-events: none; }
+    .pool-del { position: absolute; top: 3px; right: 3px; width: 22px; height: 22px; background: rgba(0,0,0,.8); color: var(--danger); border: none; border-radius: 50%; font-size: 11px; cursor: pointer; display: flex; align-items: center; justify-content: center; z-index: 2; }
+
+    /* ━━━━ MAIN ━━━━ */
+    .main { display: flex; flex-direction: column; }
+    @media (min-width: 900px) { .main { flex: 1; overflow-y: auto; min-height: 0; } }
+
+    /* ━━━━ PREVIEW AREA ━━━━ */
+    .preview-area {
+      background: var(--bg);
+      background-image:
+        radial-gradient(circle at 30% 20%, rgba(91,143,255,.05) 0%, transparent 50%),
+        linear-gradient(45deg, #0d0d12 25%, transparent 25%),
+        linear-gradient(-45deg, #0d0d12 25%, transparent 25%),
+        linear-gradient(45deg, transparent 75%, #0d0d12 75%),
+        linear-gradient(-45deg, transparent 75%, #0d0d12 75%);
+      background-size: 100% 100%, 16px 16px, 16px 16px, 16px 16px, 16px 16px;
+      background-position: 0 0, 0 0, 0 8px, 8px -8px, -8px 0;
+      display: flex; align-items: center; justify-content: center;
+      padding: 20px 16px; position: relative;
+      /* ★ preview-area内のドラッグ操作のために touch-action:none は維持 */
+      touch-action: none;
+    }
+    @media (min-width: 900px) { .preview-area { flex: 1; overflow: hidden; } }
+    .preview-label {
+      position: absolute; top: 10px; left: 14px;
+      font-size: 9px; font-weight: 700; letter-spacing: 3px; color: var(--muted); text-transform: uppercase;
+    }
+
+    /* ━━━━ ADJUST MODAL ━━━━ */
+    .adjust-modal-bg {
+      position: fixed; inset: 0; background: rgba(0,0,0,.85);
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      z-index: 1000;
+      /* ★ モーダル表示中はページスクロール不要なので touch-action:none 維持 */
+      touch-action: none;
+    }
+    .adjust-modal-title { font-size: 11px; font-weight: 700; letter-spacing: 3px; text-transform: uppercase; color: var(--muted); margin-bottom: 10px; }
+    .adjust-modal-title em { color: var(--success); font-style: normal; }
+    .adjust-frame-wrap { position: relative; background: #000; border: 2px solid var(--border); border-radius: 10px; overflow: hidden; touch-action: none; cursor: move; }
+    .adjust-frame-wrap img { position: absolute; pointer-events: none; transform-origin: 0 0; }
+    .adjust-frame-guide { position: absolute; inset: 0; pointer-events: none; z-index: 5; }
+
+    .guide-grid-split { position: absolute; inset: 0; }
+    .guide-grid-split::before { content:''; position:absolute; left:50%; top:0; bottom:0; width:2px; background:rgba(91,143,255,.5); transform:translateX(-50%); }
+    .guide-grid-split::after { content:''; position:absolute; top:50%; left:0; right:0; height:2px; background:rgba(91,143,255,.5); transform:translateY(-50%); }
+    .guide-grid-split-border { position:absolute; inset:0; border:2px solid rgba(91,143,255,.6); }
+
+    .guide-zone { position: absolute; inset: 0; border: 2px solid rgba(52,211,153,.7); }
+    .guide-zone-main { position: absolute; inset: 0; border: 2px solid rgba(91,143,255,.7); }
+
+    .adjust-hint-text { font-size: 10px; color: var(--muted); margin-top: 10px; text-align: center; line-height: 1.8; }
+    .adjust-hint-text em { color: var(--success); font-style: normal; }
+    .adjust-actions { display: flex; gap: 10px; margin-top: 14px; }
+    .btn-adjust-reset { font-family: 'Syne',sans-serif; font-size: 12px; font-weight: 700; padding: 10px 20px; background: transparent; color: var(--muted); border: 1px solid var(--border); border-radius: 50px; cursor: pointer; touch-action: manipulation; }
+    .btn-adjust-confirm { font-family: 'Syne',sans-serif; font-size: 12px; font-weight: 800; letter-spacing: 1px; padding: 10px 28px; background: linear-gradient(135deg, var(--success), #059669); color: #000; border: none; border-radius: 50px; cursor: pointer; touch-action: manipulation; }
+    .adjust-scale-row { display: flex; align-items: center; gap: 10px; margin-top: 10px; }
+    .adjust-scale-btn { width: 32px; height: 32px; background: var(--surface2); color: var(--text); border: 1px solid var(--border); border-radius: 8px; font-size: 16px; cursor: pointer; display: flex; align-items: center; justify-content: center; touch-action: manipulation; }
+    .adjust-scale-val { font-family: 'JetBrains Mono',monospace; font-size: 12px; color: var(--accent); min-width: 48px; text-align: center; }
+
+    /* ━━━━ GRID PREVIEW (TL 2×2) ━━━━ */
+    .grid-preview { display: flex; flex-direction: column; align-items: center; gap: 8px; }
+    .grid-preview-lbl { font-size: 9px; color: var(--muted); letter-spacing: 2px; font-weight: 700; text-transform: uppercase; }
+    .x-frame { background: #000; border-radius: 14px; padding: 3px; border: 1px solid #333; box-shadow: 0 0 40px rgba(0,0,0,.8); overflow: hidden; }
+    .x-grid-4 { display: grid; grid-template-columns: 1fr 1fr; gap: 2px; width: min(320px, calc(100vw - 48px)); border-radius: 12px; overflow: hidden; }
+    .x-grid-cell { aspect-ratio: 16/9; position: relative; background: var(--surface2); overflow: hidden; cursor: pointer; touch-action: manipulation; }
+    .x-grid-cell.drag-over { outline: 3px solid var(--warn); outline-offset: -3px; }
+    .x-grid-cell img { position: absolute; pointer-events: none; }
+    .cell-ph { width:100%; height:100%; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:2px; }
+    .cell-ph .num { font-family:'JetBrains Mono',monospace; font-size:14px; color:var(--border); font-weight:600; }
+    .cell-ph .lbl { font-size:7px; color:var(--muted); font-weight:700; letter-spacing:2px; text-transform:uppercase; }
+
+    /* ━━━━ SCROLL VIEW (split mode detail) ━━━━ */
+    .scroll-preview { display: flex; flex-direction: column; align-items: center; gap: 8px; }
+    .scroll-preview-lbl { font-size: 9px; color: var(--muted); letter-spacing: 2px; font-weight: 700; text-transform: uppercase; }
+    .x-scroll-frame { background: #000; border-radius: 14px; border: 1px solid #333; box-shadow: 0 0 40px rgba(0,0,0,.8); overflow: hidden; width: min(260px, calc(100vw - 48px)); }
+    .scroll-zone { position: relative; width: 100%; aspect-ratio: 16/9; overflow: hidden; }
+    .scroll-zone + .scroll-zone { border-top: 2px solid #222; }
+    .scroll-zone img { position: absolute; pointer-events: none; }
+    .zone-ph { width:100%; height:100%; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:4px; background:var(--surface2); touch-action:none; }
+    .zone-ph span { font-size:9px; color:var(--muted); font-weight:700; letter-spacing:1px; text-transform:uppercase; }
+    .scroll-zone.is-main { outline: 2px solid rgba(91,143,255,.7); outline-offset: -2px; }
+    .scroll-zone.is-hidden::after { content:''; position:absolute; inset:0; background:rgba(0,0,0,.45); z-index:2; pointer-events:none; }
+    .scroll-zone.drag-over { outline: 3px solid var(--warn) !important; outline-offset:-3px; }
+    .visible-badge { position:absolute; bottom:5px; left:5px; z-index:3; font-size:7px; font-weight:700; letter-spacing:1px; padding:2px 5px; border-radius:3px; background:rgba(91,143,255,.9); color:#fff; pointer-events:none; }
+    .zone-actions { position:absolute; bottom:4px; right:4px; z-index:5; display:flex; gap:3px; }
+    .zone-action-btn { width:22px; height:22px; background:rgba(0,0,0,.75); color:var(--text); border:1px solid var(--border); border-radius:5px; font-size:10px; cursor:pointer; display:flex; align-items:center; justify-content:center; touch-action:manipulation; transition:background .15s; }
+    .zone-action-btn:hover { background:rgba(91,143,255,.5); }
+    .zone-confirmed-badge { position:absolute; top:4px; left:4px; z-index:5; font-size:7px; font-weight:700; letter-spacing:1px; padding:2px 5px; border-radius:3px; background:rgba(52,211,153,.85); color:#000; pointer-events:none; }
+    .back-btn { font-family:'Syne',sans-serif; font-size:10px; font-weight:700; color:var(--muted); background:none; border:1px solid var(--border); border-radius:8px; padding:5px 14px; cursor:pointer; touch-action:manipulation; letter-spacing:1px; }
+
+    /* ━━━━ VERTICAL SCROLL MODE ━━━━ */
+    .vscroll-slot-bar { display: flex; gap: 6px; width: min(320px, calc(100vw - 48px)); }
+    .vscroll-slot-btn { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px; cursor: pointer; touch-action: manipulation; }
+    .vscroll-slot-thumb { width: 100%; aspect-ratio: 16/9; border-radius: 6px; overflow: hidden; border: 2px solid var(--border); background: var(--surface2); position: relative; transition: border-color .15s; }
+    .vscroll-slot-btn.active .vscroll-slot-thumb { border-color: var(--success); box-shadow: 0 0 8px rgba(52,211,153,.4); }
+    .vscroll-slot-btn.filled .vscroll-slot-thumb { border-color: var(--accent); }
+    .vscroll-slot-btn.active.filled .vscroll-slot-thumb { border-color: var(--success); }
+    .vscroll-slot-thumb img { position: absolute; pointer-events: none; }
+    .vscroll-slot-empty { width:100%; height:100%; display:flex; align-items:center; justify-content:center; }
+    .vscroll-slot-empty span { font-family:'JetBrains Mono',monospace; font-size:13px; color:var(--border); font-weight:600; }
+    .vscroll-slot-label { font-size:9px; font-weight:700; color:var(--muted); letter-spacing:1px; }
+    .vscroll-slot-btn.active .vscroll-slot-label { color:var(--success); }
+    .vslot-action-bar { display: flex; align-items: center; justify-content: space-between; width: min(320px, calc(100vw - 48px)); min-height: 28px; gap: 8px; }
+
+    /* ━━━━ DRAG GHOST ━━━━ */
+    .drag-ghost { position:fixed; width:72px; height:72px; border-radius:10px; overflow:hidden; pointer-events:none; z-index:9999; opacity:.88; box-shadow:0 8px 32px rgba(0,0,0,.6); border:2px solid var(--accent); transform:translate(-50%,-50%); display:none; }
+    .drag-ghost img { width:100%; height:100%; object-fit:cover; }
+
+    /* ━━━━ EDITOR PANEL ━━━━ */
+    .editor-panel { background:var(--surface); border-top:1px solid var(--border); display:flex; flex-direction:column; overflow-y:auto; -webkit-overflow-scrolling:touch; flex-shrink:0; padding-bottom: 28px; }
+    @media (min-width: 900px) { .editor-panel { height: 228px; flex-direction: row; overflow: hidden; flex-shrink: 0; padding-bottom: 28px; } }
+
+    .editor-content { display:flex; flex-direction:column; width:100%; }
+    @media (min-width: 900px) { .editor-content { flex-direction:row; flex:1; } }
+    .slot-tabs { display:flex; border-bottom:1px solid var(--border); flex-shrink:0; }
+    .slot-tab { flex:1; padding:8px 4px; border:none; background:transparent; font-family:'Syne',sans-serif; font-weight:700; color:var(--muted); cursor:pointer; border-bottom:2px solid transparent; margin-bottom:-1px; transition:all .2s; touch-action:manipulation; display:flex; flex-direction:column; align-items:center; gap:2px; }
+    .slot-tab .tab-dot { font-size:11px; line-height:1; }
+    .slot-tab .tab-num { font-size:11px; line-height:1; }
+    .slot-tab.active { color:var(--accent); border-bottom-color:var(--accent); }
+    .slot-tab.has-main { color:var(--text); }
+    .slot-tab.has-extra { color:var(--success); border-bottom-color:var(--success); }
+    .slot-tab.active.has-extra { color:var(--success); border-bottom-color:var(--success); }
+    @media (min-width: 900px) {
+      .slot-tabs { flex-direction:row; border-bottom:none; padding:10px 12px; gap:8px; background:var(--bg); align-items:center; }
+      .slot-tab { flex:1; padding:10px 6px; border:1px solid var(--border); border-radius:10px; margin-bottom:0; gap:4px; background:var(--surface2); transition:all .15s; }
+      .slot-tab .tab-dot { font-size:13px; }
+      .slot-tab .tab-num { font-size:16px; }
+      .slot-tab:hover { border-color:var(--accent); background:rgba(91,143,255,.1); transform:translateY(-1px); }
+      .slot-tab.active { border-color:var(--accent); background:rgba(91,143,255,.18); color:var(--accent); box-shadow:0 0 12px rgba(91,143,255,.2); transform:translateY(-1px); }
+      .slot-tab.has-main { color:var(--text); }
+      .slot-tab.has-extra { border-color:var(--success); color:var(--success); }
+      .slot-tab.has-extra:hover { background:rgba(52,211,153,.1); }
+      .slot-tab.active.has-extra { border-color:var(--success); background:rgba(52,211,153,.18); color:var(--success); box-shadow:0 0 12px rgba(52,211,153,.2); }
+    }
+    .export-section { padding:14px 16px; display:flex; flex-direction:column; gap:10px; }
+    @media (min-width: 900px) { .export-section { flex:1; justify-content:space-between; } }
+    .export-title { font-size:15px; font-weight:800; }
+    .export-desc { font-size:10px; color:var(--muted); line-height:1.5; }
+    .specs { display:flex; gap:6px; flex-wrap:wrap; }
+    .spec { font-family:'JetBrains Mono',monospace; font-size:10px; padding:3px 8px; background:var(--surface2); border:1px solid var(--border); border-radius:5px; }
+    .spec em { color:var(--accent); font-style:normal; }
+    .export-actions { display:flex; align-items:center; justify-content:space-between; gap:8px; padding-bottom:4px; }
+    .btn-clear { font-family:'Syne',sans-serif; font-size:11px; font-weight:700; color:var(--muted); background:none; border:none; cursor:pointer; text-decoration:underline; touch-action:manipulation; }
+    .btn-export { font-family:'Syne',sans-serif; font-size:13px; font-weight:800; letter-spacing:1.5px; text-transform:uppercase; padding:13px 24px; background:linear-gradient(135deg, var(--accent), var(--accent2)); color:#fff; border:none; border-radius:50px; cursor:pointer; box-shadow:0 4px 20px rgba(91,143,255,.35); position:relative; overflow:hidden; -webkit-appearance:none; touch-action:manipulation; }
+    .btn-export:active { transform:scale(.96); }
+    .btn-export:disabled { opacity:.4; cursor:not-allowed; transform:none; }
+    .progress-bar { position:absolute; left:0; top:0; bottom:0; background:rgba(255,255,255,.15); transition:width .3s; }
+    .btn-export .lbl { position:relative; z-index:1; }
+    .mobile-hint { font-size:10px; color:var(--warn); line-height:1.5; padding:8px 10px; background:rgba(251,191,36,.07); border:1px solid rgba(251,191,36,.2); border-radius:8px; }
+
+    /* ━━━━ TOAST ━━━━ */
+    .toast { position:fixed; bottom:20px; left:50%; transform:translateX(-50%) translateY(120px); background:var(--surface2); border:1px solid var(--border); border-radius:12px; padding:12px 20px; font-size:13px; font-weight:700; box-shadow:0 8px 32px rgba(0,0,0,.5); transition:transform .35s cubic-bezier(.34,1.56,.64,1); z-index:9998; white-space:nowrap; pointer-events:none; }
+    .toast.show { transform:translateX(-50%) translateY(0); }
+    .toast.success { border-color:var(--success); color:var(--success); }
+    .toast.error { border-color:var(--danger); color:var(--danger); }
+    .toast.info { border-color:var(--warn); color:var(--warn); }
+    ::-webkit-scrollbar { width:3px; } ::-webkit-scrollbar-thumb { background:var(--border); border-radius:4px; }
+
+    /* ━━━━ TOP BUTTON ━━━━ */
+    .top-btn {
+      position: fixed; top: 12px; right: 14px; z-index: 200;
+      font-family: 'JetBrains Mono', monospace; font-size: 9px; font-weight: 600;
+      letter-spacing: 2px; text-transform: uppercase; text-decoration: none;
+      color: var(--muted); background: rgba(17,17,24,.85); backdrop-filter: blur(8px);
+      border: 1px solid rgba(42,42,58,.7); border-radius: 8px;
+      padding: 6px 12px; display: flex; align-items: center; gap: 6px;
+      transition: color .2s, border-color .2s;
+    }
+    .top-btn:hover { color: var(--accent); border-color: rgba(91,143,255,.4); }
+
+    /* ━━━━ TABLET WARNING ━━━━ */
+    .tablet-warn {
+      font-size: 10px; font-weight: 700; letter-spacing: .5px;
+      color: var(--warn); margin-top: 6px;
+      display: flex; align-items: center; gap: 5px;
+    }
+
+    /* ━━━━ FOOTER ━━━━ */
+    .footer-bar {
+      position: fixed; bottom: 0; left: 0; right: 0;
+      height: 24px; display: flex; align-items: center; justify-content: center;
+      font-family: 'JetBrains Mono', monospace; font-size: 9px; font-weight: 400;
+      color: rgba(90,90,122,.45); letter-spacing: 2px;
+      background: rgba(10,10,15,.7); backdrop-filter: blur(8px);
+      border-top: 1px solid rgba(42,42,58,.4);
+      pointer-events: none; z-index: 100;
+    }
+
+    /* ━━━━ VSCROLL INFO BOX ━━━━ */
+    .vscroll-info-box {
+      background: rgba(251,191,36,.06); border: 1px solid rgba(251,191,36,.2);
+      border-radius: 10px; padding: 12px 14px; font-size: 10px; color: var(--muted); line-height: 1.7;
+    }
+    .vscroll-info-box strong { color: var(--warn); }
+  </style>
+</head>
+<body>
+<div id="app">
+  <!-- ━━━━ TOP BUTTON ━━━━ -->
+  <a class="top-btn" href="index.html">← TOP</a>
+
+  <div class="drag-ghost" ref="ghostEl"><img ref="ghostImg" src="" alt="" draggable="false"></div>
+
+  <!-- ━━━━ ADJUST MODAL ━━━━ -->
+  <div v-if="adjustModal.open" class="adjust-modal-bg" @touchstart.prevent>
+    <div class="adjust-modal-title">
+      <em>{{ adjustModal.label }}</em> — 画像を調整
+      <span v-if="adjustModal.type==='split'" style="font-size:9px;opacity:.6;display:block;margin-top:2px;">4枚全体の構図 → 決定後に各セルへ自動分割</span>
+      <span v-else-if="adjustModal.type==='main'" style="font-size:9px;color:rgba(91,143,255,.8);display:block;margin-top:2px;">TLに表示される部分（16:9）</span>
+      <span v-else style="font-size:9px;color:rgba(52,211,153,.8);display:block;margin-top:2px;">タップ後にスクロールで表示（16:9）</span>
+    </div>
+    <div class="adjust-frame-wrap"
+      :style="adjustFrameStyle"
+      ref="adjustFrameEl"
+      @mousedown.prevent="onAdjustPanStart($event,'mouse')"
+      @touchstart.prevent="onAdjustPanStart($event,'touch')"
+      @wheel.prevent="onAdjustWheel">
+      <img :src="adjustModal.src" :style="adjustImgStyle" ref="adjustImgEl" draggable="false">
+      <div class="adjust-frame-guide">
+        <template v-if="adjustModal.type==='split'">
+          <div class="guide-grid-split"></div>
+          <div class="guide-grid-split-border"></div>
+        </template>
+        <div v-else-if="adjustModal.type==='main'" class="guide-zone-main"></div>
+        <div v-else class="guide-zone"></div>
+      </div>
+    </div>
+    <div class="adjust-scale-row">
+      <button class="adjust-scale-btn" @click="adjustZoom(-0.01)" @touchend.prevent="adjustZoom(-0.01)">−</button>
+      <span class="adjust-scale-val">{{ Math.round(adjustModal.scale*100) }}%</span>
+      <button class="adjust-scale-btn" @click="adjustZoom(0.01)" @touchend.prevent="adjustZoom(0.01)">＋</button>
+    </div>
+    <div class="adjust-hint-text">ドラッグで移動 / ピンチまたはホイールで拡縮<br><em>青線</em> = TL表示部 / <em>緑線</em> = 上下隠しゾーン</div>
+    <div class="adjust-actions">
+      <button class="btn-adjust-reset" @click="resetAdjust" @touchend.prevent="resetAdjust">リセット</button>
+      <button class="btn-adjust-confirm" @click="confirmAdjust" @touchend.prevent="confirmAdjust">✓ 決定</button>
+    </div>
+  </div>
+
+  <!-- ━━━━ SIDEBAR ━━━━ -->
+  <div class="sidebar">
+    <div>
+      <div class="logo">X Split <em>Pro</em></div>
+      <div><span class="badge">HIDDEN ZONE ✦ FREE TRICK</span></div>
+    </div>
+    <div>
+      <div class="slabel">Mode</div>
+      <div class="mode-toggle">
+        <button class="mode-btn" :class="{active:mode==='split'}" @click="switchMode('split')">1枚を分割</button>
+        <button class="mode-btn" :class="{active:mode==='vscroll'}" @click="switchMode('vscroll')">縦スクロール</button>
+      </div>
+    </div>
+    <label class="dropzone" :class="{over:isDraggingOver}"
+      @dragover.prevent="isDraggingOver=true" @dragleave="isDraggingOver=false" @drop.prevent="handleFileDrop">
+      <input type="file" multiple accept="image/*" @change="handleUpload" style="display:none">
+      <div class="dropzone-icon">🖼️</div>
+      <div class="dropzone-text">
+        <template v-if="mode==='split'">画像をドロップ<br>またはタップして選択</template>
+        <template v-else>4枚の画像をドロップ<br>またはタップして選択<br><span style="font-size:9px;opacity:.6">各画像 16:9 / 1920×1080px</span></template>
+      </div>
+    </label>
+
+    <div v-if="mode==='split'" class="split-info-box">
+      <strong>仕組み：</strong>縦長画像（1200×2025px）を投稿すると、Xが自動で中央の16:9部分をTLに表示。タップで縦長全体が見え、上下の隠しゾーンが現れます。<br>
+      <span style="color:var(--success)">✓ Xの無料アカウントでも使えます</span>
+      <div class="tablet-warn">タブレットの方は横向きでお使いください</div>
+    </div>
+
+    <div v-if="mode==='vscroll'" class="vscroll-info-box">
+      <strong>仕組み：</strong>4枚の画像（3:4）をXに投稿すると、TLでは2×2グリッド表示。タップすると縦4枚が順番に展開されます。<br>
+      <span style="color:var(--warn)">⚠ X Premium（有料）が必要です</span><br>
+      <span style="font-size:9px;opacity:.7">無料アカウントでは画像の並び順を変更できないため、縦一列に繋がった表示になりません。</span>
+      <div class="tablet-warn">タブレットの方は横向きでお使いください</div>
+    </div>
+
+    <div v-if="imagePool.length">
+      <div class="slabel">Images ({{ imagePool.length }})</div>
+      <div class="pool-grid">
+        <div v-for="(img, idx) in imagePool" :key="idx" class="pool-item"
+          @mousedown="startDrag($event, img, 'mouse')"
+          @touchstart.prevent="startDrag($event, img, 'touch')">
+          <img :src="img" alt="" draggable="false">
+          <button class="pool-del" @click.stop="removeFromPool(idx)" @touchend.stop.prevent="removeFromPool(idx)">✕</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ━━━━ MAIN ━━━━ -->
+  <div class="main">
+    <div class="preview-area">
+      <div class="preview-label">Timeline Preview</div>
+
+      <template v-if="mode==='split'">
+        <div v-if="selectedGrid===null" class="grid-preview">
+          <div class="grid-preview-lbl">X Timeline — 4枚投稿（TL表示）</div>
+          <div class="x-frame">
+            <div class="x-grid-4">
+              <div v-for="n in 4" :key="n" class="x-grid-cell"
+                :class="{'drag-over': dragOverTarget==='cell-'+(n-1)}"
+                :data-drop="'cell-'+(n-1)"
+                @click="selectedGrid=n-1">
+                <img v-if="grids[n-1].main" :src="grids[n-1].main" :style="getCellImgStyle(n-1)">
+                <div class="cell-ph" v-else><span class="num">{{ n }}</span><span class="lbl">TAP</span></div>
+              </div>
+            </div>
+          </div>
+          <div style="font-size:9px;color:var(--muted);text-align:center;line-height:1.6;">
+            ↑ TLではここが表示される（16:9）<br>
+            <span style="color:var(--success)">セルをタップ → 隠しゾーンを設定</span>
+          </div>
+        </div>
+
+        <div v-else class="scroll-preview">
+          <div class="scroll-preview-lbl">タップ後のスクロールビュー（スロット {{ selectedGrid+1 }}）</div>
+          <div class="x-scroll-frame">
+            <div class="scroll-zone is-hidden" :class="{'drag-over': dragOverTarget==='layer-top'}">
+              <template v-if="grids[selectedGrid].top">
+                <img :src="grids[selectedGrid].top" :style="getZoneImgStyle(selectedGrid,'top')" :data-drop="'layer-top'">
+                <span v-if="grids[selectedGrid].topConfirmed" class="zone-confirmed-badge">✓ SET</span>
+                <div class="zone-actions">
+                  <button class="zone-action-btn" style="color:var(--accent);" @click.stop="openAdjust(selectedGrid,'top')" @touchend.stop.prevent="openAdjust(selectedGrid,'top')">⇔</button>
+                  <button class="zone-action-btn" style="color:var(--danger);" @click.stop="clearZone(selectedGrid,'top')" @touchend.stop.prevent="clearZone(selectedGrid,'top')">✕</button>
+                </div>
+              </template>
+              <div v-else class="zone-ph" :data-drop="'layer-top'">
+                <span>↑ 上隠しゾーン</span>
+                <span style="font-size:8px;opacity:.5">下スクロールで表示</span>
+                <span style="font-size:8px;opacity:.4">ドロップで設定（任意）</span>
+              </div>
+            </div>
+
+            <div class="scroll-zone is-main">
+              <template v-if="grids[selectedGrid].main">
+                <img :src="grids[selectedGrid].main" :style="getMainZoneImgStyle(selectedGrid)">
+                <span class="visible-badge">TL表示部</span>
+                <span v-if="grids[selectedGrid].mainConfirmed" class="zone-confirmed-badge" style="bottom:5px;top:auto;">✓ SET</span>
+                <div class="zone-actions">
+                  <button class="zone-action-btn" style="color:var(--accent);"
+                    @click.stop="openAdjust(selectedGrid, grids[selectedGrid].splitInfo ? 'split' : 'main')"
+                    @touchend.stop.prevent="openAdjust(selectedGrid, grids[selectedGrid].splitInfo ? 'split' : 'main')">⇔</button>
+                </div>
+              </template>
+              <div v-else class="zone-ph">
+                <span style="color:rgba(91,143,255,.9)">TL表示部（16:9）</span>
+                <span style="font-size:8px;opacity:.5">Xのタイムラインで常に見える部分</span>
+              </div>
+            </div>
+
+            <div class="scroll-zone is-hidden" :class="{'drag-over': dragOverTarget==='layer-bottom'}">
+              <template v-if="grids[selectedGrid].bottom">
+                <img :src="grids[selectedGrid].bottom" :style="getZoneImgStyle(selectedGrid,'bottom')" :data-drop="'layer-bottom'">
+                <span v-if="grids[selectedGrid].bottomConfirmed" class="zone-confirmed-badge">✓ SET</span>
+                <div class="zone-actions">
+                  <button class="zone-action-btn" style="color:var(--accent);" @click.stop="openAdjust(selectedGrid,'bottom')" @touchend.stop.prevent="openAdjust(selectedGrid,'bottom')">⇔</button>
+                  <button class="zone-action-btn" style="color:var(--danger);" @click.stop="clearZone(selectedGrid,'bottom')" @touchend.stop.prevent="clearZone(selectedGrid,'bottom')">✕</button>
+                </div>
+              </template>
+              <div v-else class="zone-ph" :data-drop="'layer-bottom'">
+                <span>↓ 下隠しゾーン</span>
+                <span style="font-size:8px;opacity:.5">上スクロールで表示</span>
+                <span style="font-size:8px;opacity:.4">ドロップで設定（任意）</span>
+              </div>
+            </div>
+          </div>
+          <button class="back-btn" @click="selectedGrid=null">← 4分割グリッドに戻る</button>
+        </div>
+      </template>
+
+      <template v-else>
+        <div class="grid-preview">
+          <div class="grid-preview-lbl">X Timeline — タップで縦4枚展開</div>
+          <div class="vscroll-slot-bar">
+            <div v-for="n in 4" :key="n"
+              class="vscroll-slot-btn"
+              :class="{active: selectedGrid===n-1, filled: !!vSlots[n-1].src}"
+              :data-drop="'vcell-'+(n-1)"
+              @click="selectedGrid = (selectedGrid===n-1 ? null : n-1)">
+              <div class="vscroll-slot-thumb">
+                <img v-if="vSlots[n-1].src" :src="vSlots[n-1].src" :style="getVThumbStyle(n-1)">
+                <div v-else class="vscroll-slot-empty"><span>{{ n }}</span></div>
+              </div>
+              <span class="vscroll-slot-label">{{ n }}</span>
+            </div>
+          </div>
+          <div class="vslot-action-bar">
+            <template v-if="selectedGrid !== null && vSlots[selectedGrid].src">
+              <span style="font-size:9px;color:var(--success);font-weight:700;letter-spacing:1px;">
+                ▶ スロット{{ selectedGrid+1 }}<span v-if="vSlots[selectedGrid].confirmed"> ✓調整済み</span>
+              </span>
+              <div style="display:flex;gap:6px;">
+                <button class="zone-action-btn" style="color:var(--accent);width:auto;padding:0 10px;font-size:11px;" @click.stop="openVAdjust(selectedGrid)" @touchend.stop.prevent="openVAdjust(selectedGrid)">⇔ 調整</button>
+                <button class="zone-action-btn" style="color:var(--danger);width:auto;padding:0 10px;font-size:11px;" @click.stop="clearVSlot(selectedGrid)" @touchend.stop.prevent="clearVSlot(selectedGrid)">✕ クリア</button>
+              </div>
+            </template>
+            <span v-else style="font-size:9px;color:var(--muted);">セルをタップして選択 → 画像をドロップ</span>
+          </div>
+          <div class="x-frame">
+            <div class="x-grid-4">
+              <div v-for="n in 4" :key="n" class="x-grid-cell"
+                :class="{'drag-over': dragOverTarget==='vcell-'+(n-1), 'vscroll-selected': selectedGrid===n-1}"
+                :data-drop="'vcell-'+(n-1)"
+                @click="selectedGrid = (selectedGrid===n-1 ? null : n-1)">
+                <img v-if="vSlots[n-1].src" :src="vSlots[n-1].src" :style="getVCellStyle(n-1)">
+                <div class="cell-ph" v-else><span class="num">{{ n }}</span><span class="lbl">DROP</span></div>
+              </div>
+            </div>
+          </div>
+          <div style="font-size:9px;color:var(--muted);">各画像 600×800px (3:4)</div>
+        </div>
+      </template>
+
+    </div><!-- /preview-area -->
+
+    <!-- ━━━━ EDITOR PANEL ━━━━ -->
+    <div class="editor-panel">
+
+      <template v-if="mode==='split'">
+        <div class="editor-content">
+          <div class="slot-tabs">
+            <button v-for="n in 4" :key="n" class="slot-tab"
+              :class="{active:selectedGrid===n-1,'has-main':grids[n-1].main,'has-extra':grids[n-1].top||grids[n-1].bottom}"
+              @click="selectedGrid=n-1">
+              <span class="tab-dot">{{ grids[n-1].main ? '●' : '○' }}</span>
+              <span class="tab-num">{{ n }}</span>
+            </button>
+          </div>
+          <div class="export-section">
+            <div>
+              <div class="export-title">Export</div>
+              <div class="export-desc">各スロットを縦長1枚（1200×2025px）で書き出します。Xに投稿するとTLでは中央16:9を自動表示、タップで上下の隠しゾーンが見えます。</div>
+            </div>
+            <div class="specs">
+              <div class="spec">出力: <em>1200×2025px</em></div>
+              <div class="spec">TL表示(FV): <em>1200×675px</em></div>
+              <div class="spec">上下隠し: <em>各675px</em></div>
+              <div class="spec">比率: <em>16:9 × 3ゾーン</em></div>
+            </div>
+            <div v-if="isMobile" class="mobile-hint">📱 画像が1枚ずつ保存されます。長押し →「写真に追加」で保存。</div>
+            <div class="export-actions">
+              <button class="btn-clear" @click="resetAll">Clear All</button>
+              <button class="btn-export" @click="handleExport" :disabled="isExporting">
+                <div class="progress-bar" :style="{width:exportProgress+'%'}"></div>
+                <span class="lbl">{{ isExporting ? Math.round(exportProgress)+'%…' : (isMobile ? 'PNG 書き出し' : 'ZIP 書き出し') }}</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </template>
+
+      <template v-else>
+        <div class="editor-content">
+          <div class="slot-tabs">
+            <button v-for="n in 4" :key="n" class="slot-tab"
+              :class="{active:selectedGrid===n-1,'has-main':vSlots[n-1].src,'has-extra':vSlots[n-1].confirmed}"
+              @click="selectedGrid=(selectedGrid===n-1?null:n-1)">
+              <span class="tab-dot">{{ vSlots[n-1].src ? '●' : '○' }}</span>
+              <span class="tab-num">{{ n }}</span>
+            </button>
+          </div>
+          <div class="export-section">
+            <div>
+              <div class="export-title">Export</div>
+              <div class="export-desc">各画像を <strong>600×800px (3:4)</strong> で書き出します。4枚をXに投稿するとタップで縦4枚展開されます。</div>
+            </div>
+            <div class="specs">
+              <div class="spec">出力: <em>600×800</em></div>
+              <div class="spec">比率: <em>3:4 × 4枚</em></div>
+            </div>
+            <div v-if="isMobile" class="mobile-hint">📱 画像が1枚ずつ保存されます。</div>
+            <div class="export-actions">
+              <button class="btn-clear" @click="resetAll">Clear All</button>
+              <button class="btn-export" @click="handleExport" :disabled="isExporting">
+                <div class="progress-bar" :style="{width:exportProgress+'%'}"></div>
+                <span class="lbl">{{ isExporting ? Math.round(exportProgress)+'%…' : (isMobile ? 'PNG 書き出し' : 'ZIP 書き出し') }}</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </template>
+
+    </div>
+  </div><!-- /main -->
+
+  <div class="toast" :class="{show:toast.show, success:toast.type==='success', error:toast.type==='error', info:toast.type==='info'}">
+    {{ toast.message }}
+  </div>
+
+  <div class="footer-bar">created by akubi</div>
+</div>
+
+<script>
+const { createApp, ref, computed, nextTick } = Vue
+
+function defaultTransform() { return { offsetX: 0, offsetY: 0, scale: 1 } }
+function defaultSlot() {
+  return {
+    top: null, topT: defaultTransform(), topConfirmed: false, topImgW: 0, topImgH: 0,
+    main: null, mainT: defaultTransform(), mainConfirmed: false, mainImgW: 0, mainImgH: 0,
+    bottom: null, bottomT: defaultTransform(), bottomConfirmed: false, bottomImgW: 0, bottomImgH: 0,
+    splitInfo: null,
+  }
+}
+function defaultVSlot() {
+  return { src: null, imgW: 0, imgH: 0, offsetX: 0, offsetY: 0, scale: 1, fw: 0, fh: 0, confirmed: false }
+}
+
+const FRAME_SPLIT_W = 320
+const FRAME_SPLIT_H = 180
+
+const FRAME_ZONE_W = 320
+const FRAME_ZONE_H = 180
+
+const VFRAME_W = 280, VFRAME_H = 158
+
+const OUT_W = 1200
+const OUT_ZONE_H = 675
+const OUT_H = OUT_ZONE_H * 3
+
+createApp({
+  setup() {
+    const mode = ref('split')
+    const imagePool = ref([])
+    const selectedGrid = ref(null)
+    const grids = ref(Array.from({length:4}, defaultSlot))
+    const vSlots = ref(Array.from({length:4}, defaultVSlot))
+    const isDraggingOver = ref(false)
+    const dragOverTarget = ref(null)
+    const isExporting = ref(false)
+    const exportProgress = ref(0)
+    const toast = ref({show:false, message:'', type:'success'})
+    const ghostEl = ref(null)
+    const ghostImg = ref(null)
+    const adjustFrameEl = ref(null)
+    const adjustImgEl = ref(null)
+
+    const isMobile = computed(() =>
+      navigator.maxTouchPoints > 0 || /Mobi|iPad|iPhone|Android/i.test(navigator.userAgent)
+    )
+
+    function switchMode(m) { mode.value = m; selectedGrid.value = null }
+
+    const adjustModal = ref({
+      open: false, src: null, type: null, cellIdx: null, label: '',
+      offsetX: 0, offsetY: 0, scale: 1, imgW: 0, imgH: 0,
+      isVSlot: false,
+    })
+
+    const adjustFrameStyle = computed(() => {
+      const m = adjustModal.value
+      let baseW, baseH
+      if (m.type === 'split') {
+        baseW = FRAME_SPLIT_W; baseH = FRAME_SPLIT_H
+      } else if (m.isVSlot) {
+        baseW = VFRAME_W; baseH = VFRAME_H
+      } else {
+        baseW = FRAME_ZONE_W; baseH = FRAME_ZONE_H
+      }
+      const fw = Math.min(baseW, window.innerWidth - 40)
+      const fh = Math.round(fw * (baseH / baseW))
+      return { width: fw+'px', height: fh+'px' }
+    })
+
+    const adjustImgStyle = computed(() => {
+      const m = adjustModal.value
+      let baseW, baseH
+      if (m.type === 'split') { baseW = FRAME_SPLIT_W; baseH = FRAME_SPLIT_H }
+      else if (m.isVSlot) { baseW = VFRAME_W; baseH = VFRAME_H }
+      else { baseW = FRAME_ZONE_W; baseH = FRAME_ZONE_H }
+      const fw = Math.min(baseW, window.innerWidth - 40)
+      const fh = Math.round(fw * (baseH / baseW))
+      if (!m.imgW || !m.imgH) return {}
+      const fitScale = Math.max(fw / m.imgW, fh / m.imgH)
+      const scaledW = m.imgW * fitScale * m.scale
+      const scaledH = m.imgH * fitScale * m.scale
+      return {
+        width: scaledW+'px', height: scaledH+'px',
+        left: ((fw-scaledW)/2 + m.offsetX)+'px',
+        top:  ((fh-scaledH)/2 + m.offsetY)+'px',
+      }
+    })
+
+    function openAdjust(cellIdx, type) {
+      const g = grids.value[cellIdx]
+      let src, t, label
+      if (type === 'split') { src = g.main; t = {...g.mainT}; label = '4分割メイン（全体構図）' }
+      else if (type === 'top') { src = g.top; t = {...g.topT}; label = '上隠しゾーン' }
+      else if (type === 'main') { src = g.main; t = {...g.mainT}; label = 'TL表示部 (FV)' }
+      else { src = g.bottom; t = {...g.bottomT}; label = '下隠しゾーン' }
+      if (!src) return
+      adjustModal.value = { open:true, src, type, cellIdx, label, offsetX:t.offsetX, offsetY:t.offsetY, scale:t.scale, imgW:0, imgH:0, isVSlot:false }
+      const img = new Image(); img.onload = () => { adjustModal.value.imgW=img.naturalWidth; adjustModal.value.imgH=img.naturalHeight }; img.src=src
+    }
+
+    function openVAdjust(idx) {
+      const s = vSlots.value[idx]
+      if (!s.src) return
+      adjustModal.value = { open:true, src:s.src, type:'vslot', cellIdx:idx, label:'スロット '+(idx+1), offsetX:s.offsetX, offsetY:s.offsetY, scale:s.scale, imgW:0, imgH:0, isVSlot:true }
+      const img = new Image(); img.onload = () => { adjustModal.value.imgW=img.naturalWidth; adjustModal.value.imgH=img.naturalHeight }; img.src=s.src
+    }
+
+    function resetAdjust() { adjustModal.value.offsetX=0; adjustModal.value.offsetY=0; adjustModal.value.scale=1 }
+
+    function confirmAdjust() {
+      const m = adjustModal.value
+      let baseW, baseH
+      if (m.type === 'split') { baseW = FRAME_SPLIT_W; baseH = FRAME_SPLIT_H }
+      else if (m.isVSlot) { baseW = VFRAME_W; baseH = VFRAME_H }
+      else { baseW = FRAME_ZONE_W; baseH = FRAME_ZONE_H }
+      const fw = Math.min(baseW, window.innerWidth - 40)
+      const fh = Math.round(fw * (baseH / baseW))
+
+      if (m.isVSlot) {
+        const s = vSlots.value[m.cellIdx]
+        s.offsetX = m.offsetX; s.offsetY = m.offsetY; s.scale = m.scale
+        s.fw = fw; s.fh = fh; s.confirmed = true
+      } else {
+        const t = { offsetX:m.offsetX, offsetY:m.offsetY, scale:m.scale, fw, fh }
+        const g = grids.value[m.cellIdx]
+        if (m.type === 'split' || m.type === 'main') {
+          g.mainT = t; g.mainConfirmed = true
+          if (m.type === 'split') {
+            for (let i=0; i<4; i++) { grids.value[i].mainT={...t}; grids.value[i].mainConfirmed=true }
+          }
+        } else if (m.type === 'top') { g.topT=t; g.topConfirmed=true }
+        else { g.bottomT=t; g.bottomConfirmed=true }
+      }
+      adjustModal.value.open = false
+      showToast('✓ 調整を確定しました', 'success')
+    }
+
+    function adjustZoom(delta) { adjustModal.value.scale = Math.max(0.1, Math.min(10, adjustModal.value.scale + delta)) }
+
+    let adjPan = null
+    function onAdjustPanStart(e, type) {
+      const m = adjustModal.value
+      if (type === 'mouse') {
+        adjPan = { startX:e.clientX, startY:e.clientY, startOffX:m.offsetX, startOffY:m.offsetY, pinch:false }
+        document.addEventListener('mousemove', onAdjustPanMove)
+        document.addEventListener('mouseup', onAdjustPanEnd)
+      } else {
+        const t = e.touches
+        if (t.length === 1) {
+          adjPan = { startX:t[0].clientX, startY:t[0].clientY, startOffX:m.offsetX, startOffY:m.offsetY, pinch:false }
+        } else {
+          const dist = Math.hypot(t[0].clientX-t[1].clientX, t[0].clientY-t[1].clientY)
+          adjPan = { pinch:true, pinchDist:dist, startScale:m.scale, startOffX:m.offsetX, startOffY:m.offsetY, startX:(t[0].clientX+t[1].clientX)/2, startY:(t[0].clientY+t[1].clientY)/2 }
+        }
+        document.addEventListener('touchmove', onAdjustPanMove, {passive:false})
+        document.addEventListener('touchend', onAdjustPanEnd)
+        document.addEventListener('touchcancel', onAdjustPanEnd)
+      }
+    }
+    function onAdjustPanMove(e) {
+      if (!adjPan) return
+      if (e.cancelable) e.preventDefault()
+      const m = adjustModal.value; const t = e.touches
+      if (!adjPan.pinch) {
+        const cx = t ? t[0].clientX : e.clientX; const cy = t ? t[0].clientY : e.clientY
+        m.offsetX = adjPan.startOffX + (cx - adjPan.startX)
+        m.offsetY = adjPan.startOffY + (cy - adjPan.startY)
+      } else if (t && t.length >= 2) {
+        const dist = Math.hypot(t[0].clientX-t[1].clientX, t[0].clientY-t[1].clientY)
+        m.scale = Math.max(0.1, Math.min(10, adjPan.startScale * (dist/adjPan.pinchDist)))
+        m.offsetX = adjPan.startOffX + ((t[0].clientX+t[1].clientX)/2 - adjPan.startX)
+        m.offsetY = adjPan.startOffY + ((t[0].clientY+t[1].clientY)/2 - adjPan.startY)
+      }
+    }
+    function onAdjustPanEnd() {
+      adjPan = null
+      document.removeEventListener('mousemove', onAdjustPanMove); document.removeEventListener('mouseup', onAdjustPanEnd)
+      document.removeEventListener('touchmove', onAdjustPanMove); document.removeEventListener('touchend', onAdjustPanEnd)
+      document.removeEventListener('touchcancel', onAdjustPanEnd)
+    }
+    function onAdjustWheel(e) { adjustModal.value.scale = Math.max(0.1, Math.min(10, adjustModal.value.scale + (e.deltaY > 0 ? -0.05 : 0.05))) }
+
+    function getCellImgStyle(idx) {
+      const g = grids.value[idx]; const info = g.splitInfo; const t = g.mainT
+      const gridW = Math.min(320, window.innerWidth - 48)
+      const fw = gridW / 2
+      const fh = fw * 9 / 16
+
+      if (!g.mainImgW || !g.mainImgH) return { width:'100%', height:'100%', objectFit:'cover' }
+
+      const mfw = t.fw || FRAME_SPLIT_W
+      const mfh = t.fh || FRAME_SPLIT_H
+
+      const fitScale = Math.max(mfw / g.mainImgW, mfh / g.mainImgH)
+      const fullW = g.mainImgW * fitScale * t.scale
+      const fullH = g.mainImgH * fitScale * t.scale
+      const fullLeft = (mfw - fullW) / 2 + t.offsetX
+      const fullTop  = (mfh - fullH)  / 2 + t.offsetY
+
+      if (info) {
+        const qLeft = info.xIdx * mfw / 2
+        const qTop  = info.yIdx * mfh / 2
+        const scX = fw / (mfw / 2)
+        const scY = fh / (mfh / 2)
+        return {
+          left:   (fullLeft - qLeft) * scX + 'px',
+          top:    (fullTop  - qTop)  * scY + 'px',
+          width:  fullW * scX + 'px',
+          height: fullH * scY + 'px',
+        }
+      } else {
+        const fitSc = Math.max(fw / g.mainImgW, fh / g.mainImgH)
+        const scX = fw / mfw; const scY = fh / mfh
+        return {
+          left:   (fw - g.mainImgW * fitSc * t.scale) / 2 + t.offsetX * scX + 'px',
+          top:    (fh - g.mainImgH * fitSc * t.scale) / 2 + t.offsetY * scY + 'px',
+          width:  g.mainImgW * fitSc * t.scale + 'px',
+          height: g.mainImgH * fitSc * t.scale + 'px',
+        }
+      }
+    }
+
+    function getZoneImgStyle(cellIdx, zoneType) {
+      const g = grids.value[cellIdx]; const t = g[zoneType+'T']
+      const fw = Math.min(260, window.innerWidth - 48)
+      const fh = fw * 9 / 16
+      const imgW = g[zoneType+'ImgW'] || 0; const imgH = g[zoneType+'ImgH'] || 0
+      if (!imgW || !imgH) return { width:'100%', height:'100%', objectFit:'cover' }
+      const mfw = t.fw || FRAME_ZONE_W; const mfh = t.fh || FRAME_ZONE_H
+      const fitScale = Math.max(mfw / imgW, mfh / imgH)
+      const scaledW = imgW * fitScale * t.scale; const scaledH = imgH * fitScale * t.scale
+      const scX = fw / mfw; const scY = fh / mfh
+      return {
+        left:   ((fw - scaledW) / 2 + t.offsetX * scX) + 'px',
+        top:    ((fh - scaledH) / 2 + t.offsetY * scY) + 'px',
+        width:  scaledW + 'px',
+        height: scaledH + 'px',
+      }
+    }
+
+    function getMainZoneImgStyle(cellIdx) {
+      const g = grids.value[cellIdx]; const info = g.splitInfo; const t = g.mainT
+      const fw = Math.min(260, window.innerWidth - 48)
+      const fh = fw * 9 / 16
+      if (!g.mainImgW || !g.mainImgH) return { width:'100%', height:'100%', objectFit:'cover' }
+      const mfw = t.fw || FRAME_SPLIT_W; const mfh = t.fh || FRAME_SPLIT_H
+      const fitScale = Math.max(mfw / g.mainImgW, mfh / g.mainImgH)
+      const fullW = g.mainImgW * fitScale * t.scale; const fullH = g.mainImgH * fitScale * t.scale
+      const fullLeft = (mfw - fullW) / 2 + t.offsetX; const fullTop = (mfh - fullH) / 2 + t.offsetY
+
+      if (info) {
+        const qLeft = info.xIdx * mfw / 2; const qTop = info.yIdx * mfh / 2
+        const scX = fw / (mfw / 2); const scY = fh / (mfh / 2)
+        return {
+          left:   (fullLeft - qLeft) * scX + 'px',
+          top:    (fullTop  - qTop)  * scY + 'px',
+          width:  fullW * scX + 'px',
+          height: fullH * scY + 'px',
+        }
+      } else {
+        const scX = fw / mfw; const scY = fh / mfh
+        return {
+          left:   ((fw - fullW * (fw / mfw)) / 2 + t.offsetX * scX) + 'px',
+          top:    ((fh - fullH * (fh / mfh)) / 2 + t.offsetY * scY) + 'px',
+          width:  fullW * (fw / mfw) + 'px',
+          height: fullH * (fh / mfh) + 'px',
+        }
+      }
+    }
+
+    function calcVImgStyle(s, fw, fh) {
+      const mfw = s.fw || VFRAME_W; const mfh = s.fh || VFRAME_H
+      const fitScale = Math.max(mfw / s.imgW, mfh / s.imgH)
+      const scaleW = fw / mfw; const scaleH = fh / mfh
+      const dispW = s.imgW * fitScale * s.scale * scaleW
+      const dispH = s.imgH * fitScale * s.scale * scaleH
+      return {
+        left:   ((fw - dispW) / 2 + s.offsetX * scaleW) + 'px',
+        top:    ((fh - dispH) / 2 + s.offsetY * scaleH) + 'px',
+        width:  dispW + 'px',
+        height: dispH + 'px',
+      }
+    }
+    function getVCellStyle(idx) {
+      const s = vSlots.value[idx]
+      if (!s.src || !s.imgW || !s.imgH) return { width:'100%', height:'100%', objectFit:'cover' }
+      const fw = Math.min(320, window.innerWidth-48)/2; const fh = fw*9/16
+      return calcVImgStyle(s, fw, fh)
+    }
+    function getVThumbStyle(idx) {
+      const s = vSlots.value[idx]
+      if (!s.src || !s.imgW || !s.imgH) return { width:'100%', height:'100%', objectFit:'cover' }
+      const barW = Math.min(320, window.innerWidth-48)
+      const fw = (barW - 18) / 4; const fh = fw * 9 / 16
+      return calcVImgStyle(s, fw, fh)
+    }
+
+    function cacheImgSize(src, g, key) {
+      if (!src) return
+      const img = new Image()
+      img.onload = () => { g[key+'ImgW']=img.naturalWidth; g[key+'ImgH']=img.naturalHeight }
+      img.src = src
+    }
+    function cacheVImgSize(src, slot) {
+      if (!src) return
+      const img = new Image()
+      img.onload = () => { slot.imgW=img.naturalWidth; slot.imgH=img.naturalHeight }
+      img.src = src
+    }
+
+    function showToast(msg, type='success') { toast.value={show:true,message:msg,type}; setTimeout(()=>toast.value.show=false,3000) }
+    function readFile(f) { return new Promise(r=>{ const fr=new FileReader(); fr.onload=e=>r(e.target.result); fr.readAsDataURL(f) }) }
+    async function handleUpload(e) { for (const f of Array.from(e.target.files||[])) imagePool.value.push(await readFile(f)); e.target.value='' }
+    async function handleFileDrop(e) { isDraggingOver.value=false; for (const f of Array.from(e.dataTransfer.files||[]).filter(f=>f.type.startsWith('image/'))) imagePool.value.push(await readFile(f)) }
+    function removeFromPool(idx) { imagePool.value.splice(idx,1) }
+    function clearZone(cellIdx, type) {
+      const g=grids.value[cellIdx]; g[type]=null; g[type+'T']=defaultTransform(); g[type+'Confirmed']=false; g[type+'ImgW']=0; g[type+'ImgH']=0
+    }
+    function clearVSlot(idx) { vSlots.value[idx]=defaultVSlot() }
+
+    function applyAutoSplit(src) {
+      for (let i=0; i<4; i++) {
+        const g=grids.value[i]; g.main=src; g.mainT=defaultTransform(); g.mainConfirmed=false
+        g.splitInfo={xIdx:i%2, yIdx:Math.floor(i/2)}; cacheImgSize(src,g,'main')
+      }
+      nextTick(()=>openAdjust(0,'split'))
+    }
+
+    let activeDragSrc=null, isDragging=false
+
+    function startDrag(e, src, type) {
+      if (e.target.classList.contains('pool-del')) return
+      activeDragSrc=src; isDragging=false; ghostImg.value.src=src
+      if (type==='mouse') { document.addEventListener('mousemove',onDragMove); document.addEventListener('mouseup',onDragEnd) }
+      else { document.addEventListener('touchmove',onDragMove,{passive:false}); document.addEventListener('touchend',onDragEnd); document.addEventListener('touchcancel',onDragEnd) }
+    }
+    function getXY(e) {
+      if (e.touches?.length) return {x:e.touches[0].clientX,y:e.touches[0].clientY}
+      if (e.changedTouches?.length) return {x:e.changedTouches[0].clientX,y:e.changedTouches[0].clientY}
+      return {x:e.clientX,y:e.clientY}
+    }
+    function onDragMove(e) {
+      if (e.cancelable) e.preventDefault()
+      const {x,y}=getXY(e)
+      if (!isDragging) { isDragging=true; ghostEl.value.style.display='block' }
+      ghostEl.value.style.left=x+'px'; ghostEl.value.style.top=y+'px'
+      ghostEl.value.style.display='none'
+      const el=document.elementFromPoint(x,y)
+      ghostEl.value.style.display='block'
+      dragOverTarget.value=el?.closest('[data-drop]')?.dataset.drop??null
+    }
+    function onDragEnd(e) {
+      if (e.cancelable) e.preventDefault()
+      ghostEl.value.style.display='none'
+      document.removeEventListener('mousemove',onDragMove); document.removeEventListener('mouseup',onDragEnd)
+      document.removeEventListener('touchmove',onDragMove); document.removeEventListener('touchend',onDragEnd)
+      document.removeEventListener('touchcancel',onDragEnd)
+      if (isDragging && dragOverTarget.value && activeDragSrc) commitDrop(dragOverTarget.value, activeDragSrc)
+      isDragging=false; activeDragSrc=null; dragOverTarget.value=null
+    }
+    function commitDrop(target, src) {
+      if (target.startsWith('cell-')) {
+        if (mode.value==='split') {
+          applyAutoSplit(src)
+        } else {
+          const idx=parseInt(target.split('-')[1]); const g=grids.value[idx]
+          g.main=src; g.mainT=defaultTransform(); g.mainConfirmed=false; g.splitInfo=null
+          cacheImgSize(src,g,'main'); nextTick(()=>openAdjust(idx,'main'))
+        }
+        showToast('✓ 配置しました','success')
+      } else if (target.startsWith('vcell-')) {
+        const idx=parseInt(target.split('-')[1]); const s=vSlots.value[idx]
+        s.src=src; s.offsetX=0; s.offsetY=0; s.scale=1; s.fw=0; s.fh=0; s.confirmed=false
+        cacheVImgSize(src,s); nextTick(()=>openVAdjust(idx))
+        showToast('✓ 配置しました','success')
+      } else if (target==='layer-top' && selectedGrid.value!==null) {
+        const g=grids.value[selectedGrid.value]; g.top=src; g.topT=defaultTransform(); g.topConfirmed=false
+        cacheImgSize(src,g,'top'); nextTick(()=>openAdjust(selectedGrid.value,'top'))
+        showToast('✓ 上隠しゾーンに配置','success')
+      } else if (target==='layer-bottom' && selectedGrid.value!==null) {
+        const g=grids.value[selectedGrid.value]; g.bottom=src; g.bottomT=defaultTransform(); g.bottomConfirmed=false
+        cacheImgSize(src,g,'bottom'); nextTick(()=>openAdjust(selectedGrid.value,'bottom'))
+        showToast('✓ 下隠しゾーンに配置','success')
+      }
+    }
+
+    function resetAll() {
+      grids.value=Array.from({length:4},defaultSlot)
+      vSlots.value=Array.from({length:4},defaultVSlot)
+      imagePool.value=[]; selectedGrid.value=null; adjustModal.value.open=false
+    }
+
+    function loadImg(src) {
+      return new Promise((res,rej)=>{ const i=new Image(); i.onload=()=>res(i); i.onerror=rej; i.src=src })
+    }
+
+    async function drawZoneRect(ctx, src, x, y, W, H, transform, frameW, frameH) {
+      if (!src) { ctx.fillStyle='#111'; ctx.fillRect(x,y,W,H); return }
+      const img = await loadImg(src)
+      ctx.save(); ctx.beginPath(); ctx.rect(x,y,W,H); ctx.clip()
+      const t = transform
+      const fitScale = Math.max(frameW / img.naturalWidth, frameH / img.naturalHeight)
+      const totalScale = fitScale * t.scale
+      const fullW = img.naturalWidth * totalScale; const fullH = img.naturalHeight * totalScale
+      const fullLeft = (frameW - fullW) / 2 + t.offsetX; const fullTop = (frameH - fullH) / 2 + t.offsetY
+      const scX = W / frameW; const scY = H / frameH
+      ctx.drawImage(img, 0, 0, img.naturalWidth, img.naturalHeight,
+        x + fullLeft * scX, y + fullTop * scY, fullW * scX, fullH * scY)
+      ctx.restore()
+    }
+
+    async function buildSplitCanvas(slotIdx, canvas) {
+      const W = OUT_W
+      const ZONE_H = OUT_ZONE_H
+      const H = OUT_H
+      const ctx = canvas.getContext('2d', {willReadFrequently:true})
+      canvas.width = W; canvas.height = H
+      ctx.fillStyle = '#111'; ctx.fillRect(0, 0, W, H)
+
+      const g = grids.value[slotIdx]
+
+      const topFW = g.topT.fw || FRAME_ZONE_W
+      const topFH = g.topT.fh || FRAME_ZONE_H
+      await drawZoneRect(ctx, g.top, 0, 0, W, ZONE_H, g.topT, topFW, topFH)
+
+      const mainFW = g.mainT.fw || FRAME_SPLIT_W
+      const mainFH = g.mainT.fh || FRAME_SPLIT_H
+      if (g.main) {
+        const img = await loadImg(g.main)
+        const t = g.mainT
+        const fitScale = Math.max(mainFW / img.naturalWidth, mainFH / img.naturalHeight)
+        const totalScale = fitScale * t.scale
+        const fullW = img.naturalWidth * totalScale; const fullH = img.naturalHeight * totalScale
+        const fullLeft = (mainFW - fullW) / 2 + t.offsetX; const fullTop = (mainFH - fullH) / 2 + t.offsetY
+
+        if (g.splitInfo) {
+          const qLeft = g.splitInfo.xIdx * mainFW / 2
+          const qTop  = g.splitInfo.yIdx * mainFH / 2
+          const qW = mainFW / 2; const qH = mainFH / 2
+          const scX = W / qW; const scY = ZONE_H / qH
+          const dx = Math.round((fullLeft - qLeft) * scX)
+          const dy = Math.round((fullTop  - qTop)  * scY)
+          const dw = Math.round(fullW * scX)
+          const dh = Math.round(fullH * scY)
+          ctx.save(); ctx.beginPath(); ctx.rect(0, ZONE_H - 1, W, ZONE_H + 2); ctx.clip()
+          ctx.drawImage(img, 0, 0, img.naturalWidth, img.naturalHeight,
+            dx, ZONE_H + dy, dw, dh)
+          ctx.restore()
+        } else {
+          await drawZoneRect(ctx, g.main, 0, ZONE_H, W, ZONE_H, g.mainT, mainFW, mainFH)
+        }
+      } else {
+        ctx.fillStyle = '#1a1a24'; ctx.fillRect(0, ZONE_H, W, ZONE_H)
+      }
+
+      const botFW = g.bottomT.fw || FRAME_ZONE_W
+      const botFH = g.bottomT.fh || FRAME_ZONE_H
+      await drawZoneRect(ctx, g.bottom, 0, ZONE_H * 2, W, ZONE_H, g.bottomT, botFW, botFH)
+    }
+
+    async function buildVCanvas(idx, canvas) {
+      const W=600, H=800
+      const ctx=canvas.getContext('2d',{willReadFrequently:true})
+      canvas.width=W; canvas.height=H; ctx.clearRect(0,0,W,H)
+      const s=vSlots.value[idx]
+      if (!s.src) { ctx.fillStyle='#111'; ctx.fillRect(0,0,W,H); return }
+      const img=await loadImg(s.src)
+      const mfw=s.fw||VFRAME_W; const mfh=s.fh||VFRAME_H
+      const fitScale=Math.max(mfw/img.naturalWidth, mfh/img.naturalHeight)
+      const totalScale=fitScale*s.scale
+      const fullW=img.naturalWidth*totalScale; const fullH=img.naturalHeight*totalScale
+      const fullLeft=(mfw-fullW)/2+s.offsetX; const fullTop=(mfh-fullH)/2+s.offsetY
+      const scX=W/mfw; const scY=H/mfh
+      ctx.save(); ctx.beginPath(); ctx.rect(0,0,W,H); ctx.clip()
+      ctx.drawImage(img,0,0,img.naturalWidth,img.naturalHeight, fullLeft*scX, fullTop*scY, fullW*scX, fullH*scY)
+      ctx.restore()
+    }
+
+    async function toBlob(canvas) {
+      let blob = await new Promise(r=>canvas.toBlob(r,'image/png'))
+      if (!blob || blob.size===0) {
+        const b64=canvas.toDataURL('image/png').split(',')[1]
+        const bin=atob(b64); const bytes=new Uint8Array(bin.length)
+        for (let i=0;i<bin.length;i++) bytes[i]=bin.charCodeAt(i)
+        blob=new Blob([bytes],{type:'image/png'})
+      }
+      return blob
+    }
+
+    async function handleExport() {
+      isExporting.value=true; exportProgress.value=0
+      try {
+        const canvas=document.createElement('canvas')
+        let done=0
+
+        if (mode.value==='split') {
+          const indices=grids.value.map((g,i)=>({g,i})).filter(({g})=>g.main)
+          if (!indices.length) { showToast('画像をスロットに配置してください','error'); return }
+          if (isMobile.value) {
+            for (const {i} of indices) {
+              await buildSplitCanvas(i,canvas)
+              const blob=await toBlob(canvas)
+              const url=URL.createObjectURL(blob)
+              const a=document.createElement('a'); a.href=url; a.download=`x_split_${i+1}.png`
+              document.body.appendChild(a); a.click(); document.body.removeChild(a)
+              await new Promise(r=>setTimeout(r,800)); URL.revokeObjectURL(url)
+              done++; exportProgress.value=(done/indices.length)*100
+            }
+            showToast(`✓ ${done}枚を保存しました`,'success')
+          } else {
+            const zip=new JSZip()
+            for (const {i} of indices) {
+              await buildSplitCanvas(i,canvas)
+              zip.file(`x_split_${i+1}.png`, await toBlob(canvas))
+              done++; exportProgress.value=(done/indices.length)*90
+            }
+            zip.file('README.txt',
+`X Split Pro — 1枚を分割モード
+出力: ${OUT_W}×${OUT_H}px (1200×2025) × ${done}ファイル
+各ゾーン構成 (16:9 = 1200×675px):
+  上隠しゾーン:  y=0    〜 675  (下スクロールで表示)
+  TL表示部(FV):  y=675  〜 1350 (Xのタイムライン2×2に表示)
+  下隠しゾーン:  y=1350 〜 2025 (上スクロールで表示)
+
+投稿方法: x_split_1〜4を4枚まとめてXに投稿
+→ Xが自動でTL表示部(16:9)をトリムして2×2に表示
+→ タップするとXの標準動作で縦長全体が表示 → 上下が見える
+→ 無料アカウントで使えるギミックです
+`)
+            exportProgress.value=95
+            const blob=await zip.generateAsync({type:'blob'}); exportProgress.value=100
+            const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='x_split_pro.zip'; a.click()
+            showToast(`✓ ${done}枚を書き出しました`,'success')
+          }
+        } else {
+          const indices=vSlots.value.map((s,i)=>({s,i})).filter(({s})=>s.src)
+          if (!indices.length) { showToast('画像をスロットに配置してください','error'); return }
+          if (isMobile.value) {
+            for (const {i} of indices) {
+              await buildVCanvas(i,canvas)
+              const blob=await toBlob(canvas)
+              const url=URL.createObjectURL(blob)
+              const a=document.createElement('a'); a.href=url; a.download=`x_vscroll_${i+1}.png`
+              document.body.appendChild(a); a.click(); document.body.removeChild(a)
+              await new Promise(r=>setTimeout(r,800)); URL.revokeObjectURL(url)
+              done++; exportProgress.value=(done/indices.length)*100
+            }
+            showToast(`✓ ${done}枚を保存しました`,'success')
+          } else {
+            const zip=new JSZip()
+            for (const {i} of indices) {
+              await buildVCanvas(i,canvas)
+              zip.file(`x_vscroll_${i+1}.png`, await toBlob(canvas))
+              done++; exportProgress.value=(done/indices.length)*90
+            }
+            zip.file('README.txt',`X Split Pro — 縦スクロールモード\n出力: 600×800px (3:4) × ${done}ファイル\n投稿方法: x_vscroll_1〜4を4枚まとめてXに投稿\n→ タイムラインで2×2グリッド表示、タップで縦4枚展開\n`)
+            exportProgress.value=95
+            const blob=await zip.generateAsync({type:'blob'}); exportProgress.value=100
+            const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='x_vscroll.zip'; a.click()
+            showToast(`✓ ${done}枚を書き出しました`,'success')
+          }
+        }
+      } catch(err) { console.error(err); showToast('書き出しに失敗しました','error') }
+      finally { isExporting.value=false; exportProgress.value=0 }
+    }
+
+    return {
+      mode, imagePool, selectedGrid, grids, vSlots,
+      isDraggingOver, dragOverTarget, isExporting, exportProgress,
+      toast, ghostEl, ghostImg, isMobile,
+      adjustModal, adjustFrameEl, adjustImgEl,
+      adjustFrameStyle, adjustImgStyle,
+      switchMode, handleUpload, handleFileDrop, removeFromPool,
+      startDrag, getCellImgStyle, getZoneImgStyle, getMainZoneImgStyle,
+      getVCellStyle, getVThumbStyle,
+      openAdjust, openVAdjust, resetAdjust, confirmAdjust, adjustZoom,
+      onAdjustPanStart, onAdjustWheel,
+      clearZone, clearVSlot, handleExport, resetAll,
+    }
+  }
+}).mount('#app')
+</script>
+</body>
+</html>
