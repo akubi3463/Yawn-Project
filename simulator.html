@@ -18,14 +18,13 @@
 body{background:var(--bg);color:var(--tx);font-family:var(--sans);min-height:100vh;padding:18px 12px 60px}
 .ttl{text-align:center;font-size:11px;letter-spacing:.25em;color:var(--mu);text-transform:uppercase;font-family:var(--mono);margin-bottom:5px}
 .sub{text-align:center;font-size:21px;font-weight:700;background:linear-gradient(135deg,var(--ac),var(--ac2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;margin-bottom:20px}
-.layout{display:grid;grid-template-columns:240px 1fr;gap:12px;max-width:1300px;margin:0 auto}
+.layout{display:grid;grid-template-columns:240px 1fr;gap:12px;max-width:1300px;margin:0 auto;align-items:stretch}
 @media(max-width:780px){.layout{grid-template-columns:1fr}}
-.sidebar{display:flex;flex-direction:column;gap:10px;justify-content:space-between}
+.sidebar{display:flex;flex-direction:column;gap:10px;justify-content:space-between;height:100%}
 @media(max-width:780px){
   .sidebar{flex-direction:column;gap:8px}
   .sidebar .pnl{width:100%}
   /* 現状パネルと表示パネルを横並びに */
-  .sidebar-top{display:flex;flex-direction:column;gap:8px}
 @media(max-width:780px){.sidebar-top{display:grid;grid-template-columns:1fr 1fr;gap:8px}}
 }
 .pnl{background:var(--sur);border:1px solid var(--bd);border-radius:11px;padding:13px}
@@ -35,6 +34,7 @@ body{background:var(--bg);color:var(--tx);font-family:var(--sans);min-height:100
 .f select,.f input{width:100%;background:var(--sur2);border:1px solid var(--bd2);color:var(--tx);border-radius:7px;padding:9px 10px;font-size:13px;font-family:var(--sans);appearance:none;-webkit-appearance:none;outline:none}
 .f select:focus,.f input:focus{border-color:var(--ac)}
 .hint{font-size:10px;color:var(--mu);font-family:var(--mono);line-height:1.7;margin-top:8px}
+.sidebar-top{display:flex;flex-direction:column;gap:8px;flex:1}
 .brow{display:flex;gap:8px;align-items:center}
 .btn-rst{flex:1;background:none;border:1px solid var(--bd2);color:var(--mu);border-radius:7px;padding:9px;font-size:11px;font-family:var(--mono);cursor:pointer;transition:all .2s}
 .btn-rst:hover{border-color:var(--dn);color:var(--dn)}
