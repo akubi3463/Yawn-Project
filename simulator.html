@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>ランク管理シミュレーター</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0e0f14;--sur:#181922;--sur2:#1f2130;
+  --bd:rgba(255,255,255,0.08);--bd2:rgba(255,255,255,0.18);
+  --tx:#e8eaf0;--mu:#7a7e96;
+  --ac:#c084fc;--ac2:#818cf8;
+  --up:#34d399;--dn:#f87171;--kp:#94a3b8;--wn:#fbbf24;
+  --mono:'DM Mono',monospace;--sans:'Noto Sans JP',sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--tx);font-family:var(--sans);min-height:100vh;padding:18px 12px 60px}
+.ttl{text-align:center;font-size:11px;letter-spacing:.25em;color:var(--mu);text-transform:uppercase;font-family:var(--mono);margin-bottom:5px}
+.sub{text-align:center;font-size:21px;font-weight:700;background:linear-gradient(135deg,var(--ac),var(--ac2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;margin-bottom:20px}
+.layout{display:grid;grid-template-columns:240px 1fr;gap:12px;max-width:1300px;margin:0 auto}
+@media(max-width:780px){.layout{grid-template-columns:1fr}}
+.sidebar{display:flex;flex-direction:column;gap:10px}
+@media(max-width:780px){
+  .sidebar{flex-direction:column;gap:8px}
+  .sidebar .pnl{width:100%}
+  /* 現状パネルと表示パネルを横並びに */
+  .sidebar-top{display:flex;flex-direction:column;gap:8px}
+@media(max-width:780px){.sidebar-top{display:grid;grid-template-columns:1fr 1fr;gap:8px}}
+}
+.pnl{background:var(--sur);border:1px solid var(--bd);border-radius:11px;padding:13px}
+.pttl{font-size:10px;font-family:var(--mono);letter-spacing:.14em;color:var(--mu);text-transform:uppercase;margin-bottom:11px;padding-bottom:7px;border-bottom:1px solid var(--bd)}
+.f{margin-bottom:9px}.f:last-child{margin-bottom:0}
+.lbl{display:block;font-size:10px;color:var(--mu);font-family:var(--mono);margin-bottom:4px}
+.f select,.f input{width:100%;background:var(--sur2);border:1px solid var(--bd2);color:var(--tx);border-radius:7px;padding:9px 10px;font-size:13px;font-family:var(--sans);appearance:none;-webkit-appearance:none;outline:none}
+.f select:focus,.f input:focus{border-color:var(--ac)}
+.hint{font-size:10px;color:var(--mu);font-family:var(--mono);line-height:1.7;margin-top:8px}
+.brow{display:flex;gap:8px;align-items:center}
+.btn-rst{flex:1;background:none;border:1px solid var(--bd2);color:var(--mu);border-radius:7px;padding:9px;font-size:11px;font-family:var(--mono);cursor:pointer;transition:all .2s}
+.btn-rst:hover{border-color:var(--dn);color:var(--dn)}
+.savest{font-size:10px;font-family:var(--mono);color:var(--mu);white-space:nowrap}
+.fbar{background:var(--sur);border:1px solid var(--bd);border-radius:11px;padding:11px 13px;margin-bottom:11px;overflow-x:auto;scrollbar-width:none}
+.fbar::-webkit-scrollbar{display:none}
+.fi{display:flex;align-items:center;min-width:max-content;gap:0}
+.fn{display:flex;flex-direction:column;align-items:center;gap:3px}
+.fp{font-family:var(--mono);font-size:12px;font-weight:500;padding:4px 11px;border-radius:20px;border:1px solid var(--bd2);background:var(--sur2);color:var(--tx);white-space:nowrap}
+.fp.cur{background:var(--ac2);color:#fff;border-color:var(--ac2)}
+.fp.mid{background:rgba(192,132,252,.13);border-color:var(--ac);color:var(--ac)}
+.fp.fin{background:var(--ac);color:#fff;border-color:var(--ac)}
+.fd{font-size:10px;color:var(--mu);font-family:var(--mono)}
+.fa{color:var(--mu);font-size:15px;padding:0 5px;margin-top:-14px}
+.fa.u{color:var(--up)}.fa.d{color:var(--dn)}
+.sec{font-size:10px;font-family:var(--mono);letter-spacing:.12em;color:var(--mu);text-transform:uppercase;margin-bottom:7px}
+.cal{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:4px}
+@media(max-width:500px){.cal{gap:2px}}
+.cdow{text-align:center;font-size:10px;font-family:var(--mono);color:var(--mu);padding:3px 0 6px}
+.cdow.tue{color:var(--wn);font-weight:500}
+.dc{background:var(--sur);border:1px solid var(--bd);border-radius:9px;padding:8px 5px 7px;min-height:92px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;cursor:pointer;transition:border-color .12s,background .12s;-webkit-tap-highlight-color:transparent;user-select:none}
+@media(max-width:500px){.dc{min-height:76px;padding:5px 3px;border-radius:7px}}
+.dc:hover{border-color:var(--bd2)}
+.dc:active{background:rgba(192,132,252,.1)}
+.dc.today{border-color:var(--ac2)}
+.dc.tue-col{background:rgba(251,191,36,.04);border-color:rgba(251,191,36,.2)}
+.dc.tue-col .dc-date{color:var(--wn)}
+.dc.has-goal{border-color:rgba(192,132,252,.55);background:rgba(192,132,252,.05)}
+.dc-date{font-size:10px;font-family:var(--mono);color:var(--mu);line-height:1}
+.dc-rank{font-size:11px;font-family:var(--mono);color:var(--mu);line-height:1}
+.dc-goal-info{font-size:10px;font-family:var(--mono);text-align:center;line-height:1.3;font-weight:500}
+.goal-ok{border-color:#4ade80!important;background:rgba(74,222,128,.06)!important}
+.goal-ok .dc-goal-info{color:#4ade80}
+.goal-warn{border-color:#f87171!important;background:rgba(248,113,113,.06)!important}
+.goal-warn .dc-goal-info{color:#f87171}
+.goal-multi{border-color:#fbbf24!important;background:rgba(251,191,36,.06)!important}
+.goal-multi .dc-goal-info{color:#fbbf24}
+.goal-down{border-color:#818cf8!important;background:rgba(129,140,248,.06)!important}
+.goal-down .dc-goal-info{color:#818cf8}
+.dc-score{font-size:22px;font-weight:700;font-family:var(--mono);color:var(--tx);line-height:1.1}
+@media(max-width:500px){.dc-score{font-size:17px}}
+.dc-score.skip{font-size:11px;color:var(--mu)}
+.dc-ev{font-size:9px;font-weight:700;padding:2px 5px;border-radius:4px;font-family:var(--mono);line-height:1;text-align:center}
+.ev-up{background:rgba(52,211,153,.14);color:var(--up)}
+.ev-kp{background:rgba(148,163,184,.1);color:var(--kp)}
+.ev-dn{background:rgba(248,113,113,.14);color:var(--dn)}
+.dc-goal{font-size:9px;font-family:var(--mono);color:var(--ac);line-height:1}
+.dc-bar{width:78%;height:3px;background:var(--sur2);border-radius:2px;overflow:hidden;margin-top:1px}
+.dc-bar-f{height:100%;background:var(--ac);border-radius:2px}
+.mbg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.72);z-index:100;align-items:flex-end;justify-content:center}
+.mbg.open{display:flex}
+@media(min-width:520px){.mbg{align-items:center}}
+.modal{background:var(--sur);border:1px solid var(--bd2);border-radius:16px 16px 0 0;padding:20px 16px 36px;width:100%;max-width:400px}
+@media(min-width:520px){.modal{border-radius:16px;padding:22px 20px 24px}}
+.m-hd{font-size:14px;font-family:var(--mono);font-weight:500;color:var(--tx);margin-bottom:2px}
+.m-sub{font-size:11px;color:var(--mu);font-family:var(--mono);margin-bottom:16px}
+.m-sec{font-size:10px;font-family:var(--mono);color:var(--mu);letter-spacing:.1em;text-transform:uppercase;margin-bottom:8px;margin-top:14px}
+.m-grid{display:grid;gap:7px}
+.m-grid.g3{grid-template-columns:repeat(3,1fr)}
+.m-grid.g5{grid-template-columns:repeat(5,1fr)}
+.mb{background:var(--sur2);border:1px solid var(--bd2);color:var(--tx);border-radius:9px;padding:13px 6px;font-size:14px;font-family:var(--mono);font-weight:500;cursor:pointer;text-align:center;transition:all .12s;-webkit-tap-highlight-color:transparent}
+.mb:hover{border-color:var(--ac2);color:var(--ac2)}
+.mb:active{transform:scale(.96)}
+.mb.on-score{background:rgba(52,211,153,.12);border-color:var(--up);color:var(--up)}
+.mb.on-goal{background:rgba(192,132,252,.15);border-color:var(--ac);color:var(--ac)}
+.mb.sm{font-size:12px;padding:11px 4px}
+.m-close{width:100%;background:none;border:1px solid var(--bd2);color:var(--mu);border-radius:9px;padding:12px;font-size:13px;font-family:var(--mono);cursor:pointer;margin-top:14px}
+.m-close:hover{border-color:var(--dn);color:var(--dn)}
+.m-clear{width:100%;background:none;border:1px solid var(--bd);color:var(--mu);border-radius:8px;padding:10px;font-size:11px;font-family:var(--mono);cursor:pointer;margin-top:6px}
+.m-clear:hover{border-color:var(--dn);color:var(--dn)}
+#m-memo{width:100%;background:var(--sur2);border:1px solid var(--bd2);color:var(--tx);border-radius:8px;padding:10px;font-size:13px;font-family:var(--sans);resize:vertical;outline:none;line-height:1.6}
+#m-memo:focus{border-color:var(--ac)}
+#m-memo::placeholder{color:var(--mu)}
+.sc2{color:#60a5fa}.sc4{color:#fb923c}.sc6{color:#f472b6}
+.goal-ok{border-color:#4ade80!important;background:rgba(74,222,128,.06)!important}
+.goal-warn{border-color:#f87171!important;background:rgba(248,113,113,.06)!important}
+.goal-multi{border-color:#fbbf24!important;background:rgba(251,191,36,.06)!important}
+.goal-down{border-color:#818cf8!important;background:rgba(129,140,248,.06)!important}
+.dc-goal-info{font-size:10px;font-family:var(--mono);text-align:center;line-height:1.2;font-weight:500;padding:1px 0}
+.goal-ok .dc-goal-info{color:#4ade80}
+.goal-warn .dc-goal-info{color:#f87171}
+.goal-multi .dc-goal-info{color:#fbbf24}
+.goal-down .dc-goal-info{color:#818cf8}
+.dc-memo{font-size:12px;color:#a3e635;font-family:var(--sans);text-align:center;line-height:1.3;max-width:95%;overflow:hidden;white-space:nowrap;font-weight:500}
+</style>
+</head>
+<body>
+<p class="sub">ランク管理シミュレーター</p>
+<div class="layout">
+<div class="sidebar">
+  <div class="sidebar-top">
+  <div class="pnl">
+    <div class="pttl">現状</div>
+    <div class="f"><span class="lbl">現在のランク</span><select id="curRank" onchange="go()"></select></div>
+    <div class="f"><span class="lbl">ランクアップまで あと＋</span><input type="number" id="plusToUp" value="18" min="1" max="18" onchange="go()"></div>
+    <div class="f"><span class="lbl">判定まで あと何日</span>
+      <select id="dtd" onchange="go()">
+        <option value="6">6日</option><option value="5">5日</option><option value="4">4日</option>
+        <option value="3">3日</option><option value="2">2日</option><option value="1">1日</option>
+        <option value="0">判定当日</option>
+      </select>
+    </div>
+  </div>
+  <div class="pnl">
+    <div class="pttl">表示</div>
+    <div class="f"><span class="lbl">表示週数</span>
+      <select id="weeks" onchange="go()">
+        <option value="2">2週間</option><option value="3" selected>3週間</option>
+        <option value="4">4週間</option><option value="6">6週間</option><option value="8">8週間</option>
+      </select>
+    </div>
+    <div class="hint">セルをタップ→<br>スコアや目標ランクを設定</div>
+  </div>
+  <div class="brow" style="grid-column:1/-1">
+    <button class="btn-rst" onclick="fullReset()">リセット</button>
+    <span class="savest" id="savest">未保存</span>
+  </div>
+  </div><!-- /sidebar-top -->
+</div>
+<div>
+  <div class="fbar"><div class="fi" id="flow"></div></div>
+  <div class="sec">スケジュール（火曜始まり）</div>
+  <div class="cal" id="cal"></div>
+</div>
+</div>
+<div class="mbg" id="mbg" onclick="bgClick(event)">
+  <div class="modal">
+    <div class="m-hd" id="m-hd"></div>
+    <div class="m-sub" id="m-sub"></div>
+    <div class="m-sec">スコア</div>
+    <div class="m-grid g3" id="m-scores"></div>
+    <div class="m-sec">目標ランク（この日までに達成したいランク）</div>
+    <div class="m-grid g5" id="m-goals"></div>
+    <button class="m-clear" onclick="clearGoal()">目標ランクをクリア</button>
+    <div class="m-sec">企画メモ</div>
+    <textarea id="m-memo" placeholder="企画内容、タイトルなど…" rows="3"></textarea>
+    <button class="m-close" onclick="closeModal()">閉じる</button>
+  </div>
+</div>
+<script>
+const RANKS=["D","C1","C2","C3","C4","C5","B1","B2","B3","A1","A2","A3","S1","S2","S3"];
+const DOW=['日','月','火','水','木','金','土'];
+const CAL_START=2;
+const COL_ORDER=[2,3,4,5,6,0,1];
+const LS='iriam_v9';
+let adj={}, goals={}, memo={}, mKey=null;
+
+function V(id){return document.getElementById(id).value}
+function setV(id,v){document.getElementById(id).value=v}
+function setText(id,t){const e=document.getElementById(id);if(e)e.textContent=t}
+
+// ── シミュレーション ──────────────────────────────────────────────
+// 「あと1日(dtd=1)」= 今夜+明日夜の2回 → 明日夜に判定
+// 初期値: cscore=18-pu, cycDay=6-dtd
+// ランクアップ: 即時(そのセルでランク変わる・表示もそのセル)
+// KEEP/DOWN: 判定はそのセルに表示するが、ランク変更は次のセルから
+function runSim(ci,pu,dtd,adjMap,totalDays){
+  // cycDay初期値 = 6-dtd, 判定後cDay=0リセット
+  // 全イベント翌日表示・翌日からランク変わる
+  const today=new Date();today.setHours(0,0,0,0);
+  let rIdx=ci, csc=18-pu, cDay=6-parseInt(dtd);
+  let pEv='', pEvc='', pRank=0;
+  const out=[];
+  for(let i=0;i<totalDays;i++){
+    const d=new Date(today);d.setDate(today.getDate()+i);
+    const k=d.toISOString().split('T')[0];
+    const sc=adjMap[k]!==undefined?adjMap[k]:1;
+    const isSkip=sc==='skip';
+    const num=isSkip?0:parseInt(sc);
+    // 前日イベントをここで反映・表示
+    let ev=pEv,evc=pEvc;
+    rIdx=Math.max(0,Math.min(14,rIdx+pRank));
+    pEv='';pEvc='';pRank=0;
+    if(!isSkip){
+      csc+=num; cDay++;
+      if(csc>=18){pEv='↑ '+RANKS[Math.min(14,rIdx+1)]+' UP';pEvc='ev-up';pRank=1;csc=0;cDay=0;}
+      else if(cDay>=7){
+        if(csc>=12){pEv=RANKS[rIdx]+' KEEP';pEvc='ev-kp';}
+        else{pEv='↓ '+RANKS[Math.max(0,rIdx-1)]+' DOWN';pEvc='ev-dn';pRank=-1;}
+        csc=0;cDay=0;
+      }
+    }
+    out.push({d,k,dispRank:rIdx,sc,num,isSkip,ev,evc,csc,cDay});
+  }
+  return out;
+}
+
+// ── フローバー ────────────────────────────────────────────────────
+function renderFlow(sim){
+  const fi=document.getElementById('flow');fi.innerHTML='';
+  const ci=parseInt(V('curRank'));
+  const today=new Date();today.setHours(0,0,0,0);
+  const tk=today.toISOString().split('T')[0];
+  const addN=(label,cls,key)=>{
+    const el=document.createElement('div');el.className='fn';
+    const d=new Date(key+'T00:00:00');
+    const dl=(d.getMonth()+1)+'/'+d.getDate()+'('+DOW[d.getDay()]+')';
+    el.innerHTML='<div class="fp '+cls+'">'+label+'</div><div class="fd">'+dl+'</div>';
+    fi.appendChild(el);
+  };
+  const addA=(up)=>{const s=document.createElement('span');s.className='fa '+(up?'u':'d');s.textContent='→';fi.appendChild(s);};
+  addN(RANKS[ci],'cur',tk);
+  const gKeys=Object.keys(goals).filter(k=>goals[k]!==undefined).sort();
+  let prev=ci;
+  gKeys.forEach((k,i)=>{
+    const ri=goals[k];
+    addA(ri>=prev);
+    addN(RANKS[ri],i===gKeys.length-1?'fin':'mid',k);
+    prev=ri;
+  });
+}
+
+// ── ストレージ ────────────────────────────────────────────────────
+function save(){
+  try{localStorage.setItem(LS,JSON.stringify({curRank:V('curRank'),plusToUp:V('plusToUp'),dtd:V('dtd'),weeks:V('weeks'),adj,goals,memo}));setText('savest','● 保存済み');}catch(e){}
+}
+function load(){try{return JSON.parse(localStorage.getItem(LS))||null}catch(e){return null}}
+function fullReset(){
+  try{localStorage.removeItem(LS)}catch(e){}
+  adj={};goals={};memo={};
+  setV('curRank',1);setV('plusToUp',18);setV('dtd',6);setV('weeks',3);
+  setText('savest','リセット完了');go();
+}
+window.onload=()=>{
+  const s=document.getElementById('curRank');RANKS.forEach((r,i)=>s.add(new Option(r,i)));
+  const sv=load();
+  if(sv){setV('curRank',sv.curRank??1);setV('plusToUp',sv.plusToUp??18);setV('dtd',sv.dtd??6);setV('weeks',sv.weeks??3);adj=sv.adj??{};goals=sv.goals??{};memo=sv.memo??{};setText('savest','● 保存済み');}
+  go();
+};
+
+// ── メインレンダリング ─────────────────────────────────────────────
+function go(){
+  save();
+  const ci=parseInt(V('curRank')),pu=parseInt(V('plusToUp')),dtd=parseInt(V('dtd')),weeks=parseInt(V('weeks'));
+  const sim=runSim(ci,pu,dtd,adj,weeks*7);
+  renderFlow(sim);
+  const cal=document.getElementById('cal');cal.innerHTML='';
+  const today=new Date();today.setHours(0,0,0,0);
+  ['火','水','木','金','土','日','月'].forEach((lb,i)=>{
+    const h=document.createElement('div');h.className='cdow'+(COL_ORDER[i]===2?' tue':'');h.textContent=lb;cal.appendChild(h);
+  });
+  const pad=(today.getDay()-CAL_START+7)%7;
+  for(let p=0;p<pad;p++){const b=document.createElement('div');b.style.visibility='hidden';b.className='dc';cal.appendChild(b);}
+  sim.forEach(({d,k,dispRank,sc,num,isSkip,ev,evc,csc,cDay})=>{
+    const dow=d.getDay();
+    const isToday=(d.getTime()===today.getTime());
+    const hasGoal=goals[k]!==undefined;
+    const card=document.createElement('div');
+    const scoreColor=isSkip?'':num>=6?'sc6':num>=4?'sc4':num>=2?'sc2':'';
+
+    // 目標判定
+    let goalInfo='', goalCls='has-goal';
+    if(hasGoal){
+      const gRank=goals[k];
+      const rankDiff=gRank-dispRank;
+      const daysLeft=Math.max(1,7-cDay); // このサイクルの残り日数
+      const maxPossible=daysLeft*6;
+
+      if(rankDiff>0){
+        // ランクアップ目標
+        const needed=(18-csc)+(rankDiff-1)*18;
+        if(needed<=0){ goalInfo='達成済み'; goalCls='goal-ok'; }
+        else if(needed<=maxPossible){ goalInfo='あと+'+needed+'pt'; goalCls='goal-ok'; }
+        else { goalInfo='あと+'+needed+'pt(複数サイクル)'; goalCls='goal-multi'; }
+      } else if(rankDiff===0){
+        // キープ目標
+        const needed=Math.max(0,12-csc);
+        if(needed===0){ goalInfo='KEEP達成'; goalCls='goal-ok'; }
+        else if(needed<=maxPossible){ goalInfo='KEEP あと+'+needed+'pt'; goalCls='goal-ok'; }
+        else { goalInfo='KEEP厳しい あと+'+needed+'pt'; goalCls='goal-warn'; }
+      } else {
+        // ダウン目標: 7日間で11pt以下に抑える必要がある
+        if(csc>=12){
+          // すでに12pt以上→このサイクルでのダウン不可能
+          goalInfo='ダウン不可(累計'+csc+'pt)'; goalCls='goal-warn';
+        } else {
+          // あと何pt以内に抑えればいいか
+          const maxAllowed=11-csc;
+          goalInfo='あと+'+maxAllowed+'以内でダウン'; goalCls='goal-down';
+        }
+      }
+    }
+
+    let cls='dc';
+    if(isToday) cls+=' today';
+    if(dow===2) cls+=' tue-col';
+    if(hasGoal) cls+=' '+goalCls;
+    card.className=cls;
+    card.onclick=()=>openModal(k,d,dispRank,sc,csc);
+    const disp=isSkip?'SKIP':'+'+num;
+
+    card.innerHTML=
+      '<div class="dc-date">'+(d.getMonth()+1)+'/'+d.getDate()+'('+DOW[dow]+')</div>'+
+      (!ev&&!hasGoal?'<div class="dc-rank">'+RANKS[dispRank]+'</div>':'')+
+      (ev?'<div class="dc-ev '+evc+'">'+ev+'</div>':'')+
+      (hasGoal?'<div class="dc-goal-info">'+goalInfo+'</div>':'')+
+      '<div class="dc-score'+(isSkip?' skip':' '+scoreColor)+'">'+disp+'</div>'+
+      (memo[k]?'<div class="dc-memo">'+memo[k].slice(0,8)+(memo[k].length>8?'…':'')+'</div>':'');
+    cal.appendChild(card);
+  });
+}
+
+// ── モーダル ──────────────────────────────────────────────────────
+function openModal(k,date,dispRank,currentSc,csc){
+  mKey=k;
+  const dow=date.getDay();
+  setText('m-hd',(date.getMonth()+1)+'/'+date.getDate()+'('+DOW[dow]+')');
+  setText('m-sub','予測ランク: '+RANKS[dispRank]+'　累計: '+csc+'/18');
+  const sg=document.getElementById('m-scores');sg.innerHTML='';
+  const curSc=adj[k]!==undefined?adj[k]:1;
+  [['0\n(休)',0],['+1',1],['+2',2],['+4',4],['+6',6],['ス\nキパ','skip']].forEach(([lb,val])=>{
+    const b=document.createElement('button');
+    b.className='mb'+(curSc==val?' on-score':'');
+    b.style.whiteSpace='pre-line';b.textContent=lb;
+    b.onclick=()=>{if(val===1)delete adj[k];else adj[k]=val;closeModal();go();};
+    sg.appendChild(b);
+  });
+  const gg=document.getElementById('m-goals');gg.innerHTML='';
+  const curGoal=goals[k];
+  RANKS.forEach((r,i)=>{
+    const b=document.createElement('button');
+    b.className='mb sm'+(curGoal===i?' on-goal':'');
+    b.textContent=r;
+    b.onclick=()=>{goals[k]=i;closeModal();go();};
+    gg.appendChild(b);
+  });
+  const ta=document.getElementById('m-memo');ta.value=memo[k]||'';ta.oninput=()=>{if(ta.value.trim())memo[k]=ta.value.trim();else delete memo[k];};
+  document.getElementById('mbg').classList.add('open');
+}
+function clearGoal(){if(mKey){delete goals[mKey];closeModal();go();}}
+function closeModal(){document.getElementById('mbg').classList.remove('open');mKey=null;go();}
+function bgClick(e){if(e.target===document.getElementById('mbg'))closeModal();}
+</script>
+</body>
+</html>
